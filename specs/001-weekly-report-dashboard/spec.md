@@ -155,6 +155,72 @@ exits non-zero.
 
 ---
 
+---
+
+### User Story 6 - Regenerate on a schedule without being asked (Priority: P2)
+
+As the workspace operator, I want daily and weekly dashboard regeneration to run
+on a schedule from the CLI, so the view is current when I open it rather than
+current only when I remember to rebuild it.
+
+**Why this priority**: Recovered directive, 2026-05-28: *"Add a cronjob
+scheduling feature in TUI, GUI, and CLI for auto deployment of daily and weekly
+versions."* This was recorded two months before the specification was written and
+was omitted from it. A dashboard that must be rebuilt by hand goes stale exactly
+when attention is elsewhere, which is the condition it exists to detect.
+
+Scope is narrowed deliberately: this feature covers the **CLI** path only. The
+TUI and GUI surfaces named in the original directive belong to whatever owns
+those surfaces, and claiming them here would overstate what this project builds.
+
+**Independent Test**: Install the schedule, wait for one interval, and confirm
+`index.html` was rebuilt with no human action and the run was logged.
+
+**Acceptance Scenarios**:
+
+1. **Given** the generator is installed, **When** the user runs the schedule
+   install command, **Then** a recurring job is registered for the daily and
+   weekly cadences and its identity and next run time are printed.
+2. **Given** a scheduled run fires, **When** it completes, **Then** the outcome,
+   duration, and any skipped weeks are appended to a run log.
+3. **Given** a scheduled run fails an assertion, **When** it exits, **Then** the
+   failure is recorded and the previously good `index.html` is left in place
+   rather than replaced with a broken one.
+4. **Given** a schedule is already installed, **When** install runs again,
+   **Then** it is idempotent and does not create a duplicate job.
+5. **Given** the user runs the uninstall command, **Then** the job is removed and
+   its absence is confirmed.
+
+---
+
+### User Story 7 - Reports carry work, not process talk (Priority: P3)
+
+As the workspace operator, I want the prose the dashboard surfaces to exclude
+process meta-discussion and to preserve job-search and meetup references, so what
+is displayed is the work rather than the conversation about the work.
+
+**Why this priority**: Recovered directive, 2026-07-20: *"Redo daily report
+excluding process meta-discussion, include more job search references and meetup
+references."* The specification treats reports as read-only input and never
+addresses what they should contain, so this directive had no home.
+
+**Independent Test**: Render a week whose report contains both a process aside
+and a job-search item; confirm the aside is de-emphasised, the job-search item is
+retained, and the source Markdown is unmodified.
+
+**Acceptance Scenarios**:
+
+1. **Given** a report containing process meta-discussion, **When** the prose
+   panel renders, **Then** those passages are marked as process rather than
+   silently deleted, because the corpus is the record and deletion is loss.
+2. **Given** a report containing job-search or meetup references, **When** it
+   renders, **Then** those are preserved and surfaced, never filtered as noise.
+3. **Given** any classification is applied, **When** the panel renders, **Then**
+   it states how many passages were classified and by what rule, so the
+   filtering is auditable rather than invisible.
+4. **Given** the corpus is read, **When** anything renders, **Then** the source
+   Markdown is unchanged: classification is a display decision only.
+
 ### Edge Cases
 
 - A week with a bundle but no report pair, or a pair but no bundle.
@@ -225,6 +291,23 @@ exits non-zero.
 - **NFR-042**: System MUST NOT convey information by color alone.
 - **NFR-043**: Every figure MUST have an adjacent data table.
 
+- **FR-070**: System MUST provide a CLI command to install a recurring
+  regeneration schedule for daily and weekly cadences.
+- **FR-071**: Schedule installation MUST be idempotent and MUST NOT create
+  duplicate jobs on repeat invocation.
+- **FR-072**: System MUST provide a CLI command to uninstall the schedule and
+  confirm its removal.
+- **FR-073**: Each scheduled run MUST append its outcome, duration, and skipped
+  items to a run log.
+- **FR-074**: A scheduled run that fails an assertion MUST leave the previous
+  `index.html` in place rather than overwrite it with a failed build.
+- **FR-080**: System MUST classify report passages as process meta-discussion
+  without deleting them, marking rather than removing.
+- **FR-081**: System MUST preserve and surface job-search and meetup references.
+- **FR-082**: System MUST state how many passages were classified and by which
+  rule.
+- **FR-083**: Classification MUST NOT modify the source Markdown.
+
 ### Key Entities
 
 - **WeekRecord**: One per week-ending date. Throughput counts, coverage flags,
@@ -259,6 +342,11 @@ exits non-zero.
 - **SC-008**: Full regeneration of 52 weeks completes in under 30 seconds.
 - **SC-009**: Page weight stays under 3 MB and reaches interactive in under 2
   seconds from disk.
+
+- **SC-010**: A scheduled run regenerates `index.html` with no human action and
+  records the run in the log.
+- **SC-011**: A week containing both a process aside and a job-search reference
+  renders with the aside marked and the reference retained.
 
 ## Assumptions
 

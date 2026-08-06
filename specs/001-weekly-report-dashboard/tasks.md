@@ -294,6 +294,52 @@ T001, T002  ──→  T003..T006  ──→  T008..T011  ──→  T013  ─�
 | D | T016, T026 | CSS and vendoring touch nothing shared |
 | E | T023, T024, T025 | Independent test cases |
 
+---
+
+## Phase 6: Scheduled Regeneration (US6) and Report Curation (US7)
+
+Added 2026-08-05 after cross-referencing the intent archaeology corpus. Both
+directives predate the specification and were absent from it: scheduled
+deployment was recorded 2026-05-28, report curation 2026-07-20.
+
+- [ ] T049 [US6] Implement `scripts/schedule.py` with `install`, `uninstall` and
+      `status` subcommands, registering daily and weekly cadences through the
+      platform scheduler. Install is idempotent: re-running never creates a
+      second job (FR-070, FR-071, FR-072).
+
+- [ ] T050 [US6] Implement run logging in `scripts/schedule.py`: each scheduled
+      run appends outcome, duration, and every skipped week with its reason to
+      `run-log.jsonl` (FR-073).
+
+- [ ] T051 [US6] Make a failing scheduled run non-destructive. Build to a
+      temporary path and promote only on success, so a run that fails an
+      assertion leaves the previous `index.html` untouched (FR-074).
+
+- [ ] T052 [P] [US6] Write `tests/test_schedule.py`: install is idempotent,
+      uninstall removes the job, a failing build leaves the prior artifact in
+      place, and the run log records a skipped week with its reason.
+
+- [ ] T053 [US7] Implement `classify_passages()` in `scripts/curate.py`. Marks
+      process meta-discussion; never deletes. Returns passage plus label plus
+      the rule that fired, so every decision is attributable (FR-080).
+
+- [ ] T054 [US7] Implement job-search and meetup retention in
+      `scripts/curate.py`. These are always preserved and surfaced, and are
+      never eligible for the process classifier (FR-081).
+
+- [ ] T055 [US7] Surface the classification summary in the prose panel: how many
+      passages were classified and by which rule (FR-082).
+
+- [ ] T056 [P] [US7] Write `tests/test_curate.py`: process asides are marked and
+      not removed, job-search references survive classification, the summary
+      count matches the labels applied, and the source Markdown is byte-identical
+      before and after (FR-083).
+
+**Gate 6**: A scheduled run regenerates the dashboard unattended and logs it
+(SC-010). A week containing both a process aside and a job-search reference
+renders with the aside marked and the reference retained (SC-011). No source
+Markdown is modified by either feature.
+
 ## Traceability
 
 Every requirement and success criterion maps to at least one task. A delegated
