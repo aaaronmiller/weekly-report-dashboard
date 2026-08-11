@@ -1,0 +1,251 @@
+{
+  "generated_at": "2026-08-10T07:36:56.090140+00:00",
+  "source": "ingest_telemetry M1/M6",
+  "weeks": [
+    {
+      "cost_usd": 0.0119,
+      "health_raw_gb": 0.84,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 5950,
+      "week_ending": "2026-02-07"
+    },
+    {
+      "cost_usd": 0.0527,
+      "health_raw_gb": 3.72,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 26350,
+      "week_ending": "2026-02-14"
+    },
+    {
+      "cost_usd": 0.0238,
+      "health_raw_gb": 1.68,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 11900,
+      "week_ending": "2026-02-28"
+    },
+    {
+      "cost_usd": 0.0187,
+      "health_raw_gb": 1.32,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 9350,
+      "week_ending": "2026-03-07"
+    },
+    {
+      "cost_usd": 0.0221,
+      "health_raw_gb": 1.56,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 11050,
+      "week_ending": "2026-03-14"
+    },
+    {
+      "cost_usd": 0.0068,
+      "health_raw_gb": 0.48,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 3400,
+      "week_ending": "2026-03-21"
+    },
+    {
+      "cost_usd": 0.0051,
+      "health_raw_gb": 0.36,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 2550,
+      "week_ending": "2026-03-28"
+    },
+    {
+      "cost_usd": 0.0187,
+      "health_raw_gb": 1.32,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 9350,
+      "week_ending": "2026-04-04"
+    },
+    {
+      "cost_usd": 0.0306,
+      "health_raw_gb": 2.16,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 15300,
+      "week_ending": "2026-04-11"
+    },
+    {
+      "cost_usd": 0.0153,
+      "health_raw_gb": 1.08,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 7650,
+      "week_ending": "2026-04-18"
+    },
+    {
+      "cost_usd": 0.0731,
+      "health_raw_gb": 5.16,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 36550,
+      "week_ending": "2026-04-25"
+    },
+    {
+      "cost_usd": 0.1394,
+      "health_raw_gb": 9.84,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 69700,
+      "week_ending": "2026-05-02"
+    },
+    {
+      "cost_usd": 0.1207,
+      "health_raw_gb": 8.52,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 60350,
+      "week_ending": "2026-05-09"
+    },
+    {
+      "cost_usd": 0.2312,
+      "health_raw_gb": 16.32,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 115600,
+      "week_ending": "2026-05-16"
+    },
+    {
+      "cost_usd": 0.1394,
+      "health_raw_gb": 9.84,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 69700,
+      "week_ending": "2026-05-23"
+    },
+    {
+      "cost_usd": 0.0,
+      "health_raw_gb": 0.0,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 0,
+      "week_ending": "2026-05-24"
+    },
+    {
+      "cost_usd": 0.0765,
+      "health_raw_gb": 5.4,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 38250,
+      "week_ending": "2026-05-30"
+    },
+    {
+      "cost_usd": 0.1675,
+      "health_raw_gb": 4.68,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 83750,
+      "week_ending": "2026-05-31"
+    },
+    {
+      "cost_usd": 0.3978,
+      "health_raw_gb": 28.08,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 198900,
+      "week_ending": "2026-06-06"
+    },
+    {
+      "cost_usd": 0.0,
+      "health_raw_gb": 0.0,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 0,
+      "week_ending": "2026-06-07"
+    },
+    {
+      "cost_usd": 0.068,
+      "health_raw_gb": 4.8,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 34000,
+      "week_ending": "2026-06-13"
+    },
+    {
+      "cost_usd": 0.0,
+      "health_raw_gb": 0.0,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 0,
+      "week_ending": "2026-06-14"
+    },
+    {
+      "cost_usd": 0.612,
+      "health_raw_gb": 43.2,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 306000,
+      "week_ending": "2026-06-20"
+    },
+    {
+      "cost_usd": 0.7037,
+      "health_raw_gb": 21.72,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 351850,
+      "week_ending": "2026-06-21"
+    },
+    {
+      "cost_usd": 0.1496,
+      "health_raw_gb": 0.0,
+      "provenance": "verified:daily",
+      "token_usage": 74800,
+      "week_ending": "2026-06-27"
+    },
+    {
+      "cost_usd": 0.2879,
+      "health_raw_gb": 3.24,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 143950,
+      "week_ending": "2026-06-28"
+    },
+    {
+      "cost_usd": 0.2601,
+      "health_raw_gb": 18.36,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 130050,
+      "week_ending": "2026-07-04"
+    },
+    {
+      "cost_usd": 0.2943,
+      "health_raw_gb": 13.32,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 147150,
+      "week_ending": "2026-07-05"
+    },
+    {
+      "cost_usd": 0.221,
+      "health_raw_gb": 15.6,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 110500,
+      "week_ending": "2026-07-11"
+    },
+    {
+      "cost_usd": 0.068,
+      "health_raw_gb": 4.8,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 34000,
+      "week_ending": "2026-07-18"
+    },
+    {
+      "cost_usd": 0.0,
+      "health_raw_gb": 0.0,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 0,
+      "week_ending": "2026-07-19"
+    },
+    {
+      "cost_usd": 0.051,
+      "health_raw_gb": 3.6,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 25500,
+      "week_ending": "2026-07-25"
+    },
+    {
+      "cost_usd": 0.1607,
+      "health_raw_gb": 4.2,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 80350,
+      "week_ending": "2026-08-01"
+    },
+    {
+      "cost_usd": 0.0527,
+      "health_raw_gb": 3.72,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 26350,
+      "week_ending": "2026-08-08"
+    },
+    {
+      "cost_usd": 0.0017,
+      "health_raw_gb": 0.12,
+      "provenance": "estimated:weekly/7",
+      "token_usage": 850,
+      "week_ending": "2026-08-15"
+    }
+  ]
+}

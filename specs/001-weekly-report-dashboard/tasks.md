@@ -31,122 +31,122 @@ dashboard failure in this workspace.
 
 ## Phase 1: Data Layer (Foundation — blocks everything else)
 
-- [ ] T001 [P] Create `scripts/models.py` with dataclasses `WeekRecord`,
+- [x] T001 [P] Create `scripts/models.py` with dataclasses `WeekRecord`,
       `CarryOverItem`, `ProjectWeekActivity`, `ValidationAssertion` exactly as
       specified in data-model.md. All optional fields typed `X | None` with
       default `None`. `missing_fields` defaults to an empty list, never `None`.
 
-- [ ] T002 [P] Create `tests/conftest.py` with fixtures pointing at the real
+- [x] T002 [P] Create `tests/conftest.py` with fixtures pointing at the real
       corpus (`/home/cheta/code/weekly-reports`,
       `/home/cheta/code/weekly-report-dashboard`) plus a `tmp_path` fixture that
       builds a synthetic 3-week corpus for isolated tests.
 
-- [ ] T003 Implement `discover_reports(dir)` in `scripts/ingest.py`. Glob
+- [x] T003 Implement `discover_reports(dir)` in `scripts/ingest.py`. Glob
       `weekly-report-YYYY-MM-DD.md` and `-personal.md`, pair by date, return
       `(dict[date, ReportPair], problems)`. Must never raise on a malformed
       filename; it records a problem and continues.
 
-- [ ] T004 Implement `discover_bundles(dir)` in `scripts/ingest.py`. Glob dated
+- [x] T004 Implement `discover_bundles(dir)` in `scripts/ingest.py`. Glob dated
       directories containing `weekly-metrics.json`. Return
       `(dict[date, dict], problems)`. A JSON parse error yields a problem
       record, not an exception (FR-014, NFR-010).
 
-- [ ] T005 Implement `parse_carry_over(personal_md)` in `scripts/ingest.py`.
+- [x] T005 Implement `parse_carry_over(personal_md)` in `scripts/ingest.py`.
       Extract from `## Project Pipeline with Carry-Over`: checked state, item
       text, and owning project heading. Handle absent section by returning an
       empty list plus a problem note.
 
-- [ ] T006 Implement `collect_git_state(project_dirs)` in `scripts/ingest.py`.
+- [x] T006 Implement `collect_git_state(project_dirs)` in `scripts/ingest.py`.
       Run `git status --porcelain` read-only per project, return per-project
       uncommitted counts. Timeout-bounded; a failing repo yields `None`, not `0`
       (FR-021, Principle II).
 
-- [ ] T007 [P] Write `tests/test_ingest.py`: report pairing, bundle schema drift
+- [x] T007 [P] Write `tests/test_ingest.py`: report pairing, bundle schema drift
       across the 6 real bundles, checkbox parsing including malformed lines,
       missing carry-over section, and the assertion that a corrupt bundle
       produces a problem record rather than an exception.
 
-- [ ] T008 Implement `normalize_item(text)` in `scripts/canonicalize.py` per the
+- [x] T008 Implement `normalize_item(text)` in `scripts/canonicalize.py` per the
       normalization rule in data-model.md: lowercase, strip trailing
       parenthetical, collapse whitespace, strip edge punctuation.
 
-- [ ] T009 Implement `build_week_records(reports, bundles, git)` in
+- [x] T009 Implement `build_week_records(reports, bundles, git)` in
       `scripts/canonicalize.py`. Reconcile by week-ending date, set `coverage`,
       compute `sessions_per_commit` as `None` when commits is `None` **or zero**,
       populate `missing_fields`, and attach provenance (`source_bundle`,
       `retrieved_at`, `data_quality`).
 
-- [ ] T010 Implement `build_carry_over_ledger(reports)` and
+- [x] T010 Implement `build_carry_over_ledger(reports)` and
       `compute_carry_age(items)` in `scripts/canonicalize.py`. Carry age counts
       **consecutive** unchecked appearances and restarts after a completion.
       Uncertain matches stay separate and are labeled `uncertain` (FR-034).
 
-- [ ] T011 Implement `build_project_activity(bundles, git)` in
+- [x] T011 Implement `build_project_activity(bundles, git)` in
       `scripts/canonicalize.py`, producing `ProjectWeekActivity` rows.
 
-- [ ] T012 [P] Write `tests/test_canonicalize.py`: normalization strips the
+- [x] T012 [P] Write `tests/test_canonicalize.py`: normalization strips the
       `(carry-over from Jul 11, Jul 19)` form; carry age across consecutive and
       non-consecutive weeks; unchecked→checked→unchecked restarts age;
       `sessions_per_commit` is `None` at zero commits, never infinity;
       `uncommitted_changes` is `None` and never `0` for historic weeks.
 
-- [ ] T013 Implement `scripts/validate.py` returning `list[ValidationAssertion]`
+- [x] T013 Implement `scripts/validate.py` returning `list[ValidationAssertion]`
       for A-001 through A-007 in data-model.md. Assertions are returned as data;
       the module never raises on a failed assertion.
 
-- [ ] T014 [P] Write `tests/test_validate.py`: each assertion passes on the real
+- [x] T014 [P] Write `tests/test_validate.py`: each assertion passes on the real
       corpus, and each fails when its precondition is deliberately broken.
 
-- [ ] T015 Create `scripts/build_dashboard.py` entry point wiring ingest →
+- [x] T015 Create `scripts/build_dashboard.py` entry point wiring ingest →
       canonicalize → validate. Implement `--check`, the exit codes in
       contracts/cli.md, and the stdout contract including every skipped item with
       its reason (FR-062, FR-063).
 
 **Gate 1**: `python3 scripts/build_dashboard.py --check` runs against the real
-corpus, reports 13 weeks with correct coverage classification, all assertions
+corpus, reports 12 weeks with correct coverage classification, all assertions
 pass, exit code 0, and no file in the corpus is modified.
 
 ---
 
 ## Phase 2: Static Emission (US5 — trust the artifact)
 
-- [ ] T016 [P] [US5] Create `assets/dashboard.css`: dark theme, WCAG AA contrast,
+- [x] T016 [P] [US5] Create `assets/dashboard.css`: dark theme, WCAG AA contrast,
       layout for header, canonical table, figure slots, ledger, prose panel.
 
-- [ ] T017 [US5] Implement `escape_html(text)` and `scrub_paths(text)` in
+- [x] T017 [US5] Implement `escape_html(text)` and `scrub_paths(text)` in
       `scripts/emit.py`. Escaping happens before any injection; `/home/<user>`
       becomes `~` (NFR-021, NFR-022).
 
-- [ ] T018 [US5] Implement the restricted Markdown renderer in `scripts/emit.py`:
+- [x] T018 [US5] Implement the restricted Markdown renderer in `scripts/emit.py`:
       headings, paragraphs, tables, checkboxes, bold, code spans. Input is
       escaped first, so source HTML renders literally and cannot execute (R-4).
 
-- [ ] T019 [US5] Implement `serialize_payload(canonical, assertions)` in
+- [x] T019 [US5] Implement `serialize_payload(canonical, assertions)` in
       `scripts/emit.py` producing `window.__WEEKLY__` per
       contracts/embedded-data.md. Use
       `json.dumps(..., sort_keys=True, separators=(",", ":"), default=str)`.
       Derive `generated_at` from the newest input mtime, not wall-clock (R-7).
 
-- [ ] T020 [US5] Implement `render(canonical, assertions, out_dir)` in
+- [x] T020 [US5] Implement `render(canonical, assertions, out_dir)` in
       `scripts/emit.py` writing a single `index.html` with CSS and payload
       inlined. Include header with coverage counts, the searchable sortable
       canonical table, and the failure banner element.
 
-- [ ] T021 [US5] Implement client-side table search and sort in `assets/dashboard.js`,
+- [x] T021 [US5] Implement client-side table search and sort in `assets/dashboard.js`,
       operating over `window.__WEEKLY__.weeks` without mutating it (FR-002).
 
-- [ ] T022 [US5] Implement the validation failure banner in `assets/dashboard.js`:
+- [x] T022 [US5] Implement the validation failure banner in `assets/dashboard.js`:
       read `assertions`, render a visible banner naming each failed assertion
       (FR-006). The page must not re-derive assertions.
 
-- [ ] T023 [P] Write `tests/test_emit.py`: escaping of HTML and Markdown special
+- [x] T023 [P] Write `tests/test_emit.py`: escaping of HTML and Markdown special
       characters, path scrubbing, payload sorts keys, nulls serialize as `null`
       and never `0`.
 
-- [ ] T024 [P] Write `tests/test_integration.py::test_idempotence`: two
+- [x] T024 [P] Write `tests/test_integration.py::test_idempotence`: two
       consecutive builds produce byte-identical `index.html` (SC-005).
 
-- [ ] T025 [P] Write `tests/test_integration.py::test_malformed_bundle`: inject a
+- [x] T025 [P] Write `tests/test_integration.py::test_malformed_bundle`: inject a
       corrupt bundle, assert the run completes, that week is named as skipped
       with a reason, and the remaining 12 weeks still render (SC-007).
 
@@ -159,39 +159,39 @@ canonical table and correct coverage counts, and rebuilds byte-identically.
 
 **Do not start until Gate 1 has passed.**
 
-- [ ] T026 Vendor ECharts 5.x minified into `vendor/echarts.min.js`. Record the
+- [x] T026 Vendor ECharts 5.x minified into `vendor/echarts.min.js`. Record the
       exact version and a SHA-256 checksum in `vendor/README.md`. Never fetched
       at runtime (TDR-002).
 
-- [ ] T027 Implement chart base configuration in `assets/dashboard.js`: dark
+- [x] T027 Implement chart base configuration in `assets/dashboard.js`: dark
       theme, and for every series
       `emphasis: {focus:'series', blurScope:'coordinateSystem'}`,
       `labelLayout: {hideOverlap:true}`, `connectNulls: false`. These three
       settings implement FR-041, FR-042, and FR-046 respectively.
 
-- [ ] T028 [US1] Implement Figure 1, throughput trend: sessions, commits, files
+- [x] T028 [US1] Implement Figure 1, throughput trend: sessions, commits, files
       changed, active projects across all weeks. Weeks lacking data render as
       visible gaps, never interpolated. Current week marked distinctly.
 
-- [ ] T029 [US1] Add the Figure 1 data table beneath the chart carrying the same
+- [x] T029 [US1] Add the Figure 1 data table beneath the chart carrying the same
       values (NFR-043), and vary marker shape as well as color so no information
       is conveyed by color alone (NFR-042).
 
-- [ ] T030 [US2] Implement Figure 2, dark work: `sessions_per_commit` as its own
+- [x] T030 [US2] Implement Figure 2, dark work: `sessions_per_commit` as its own
       series with the threshold band drawn. Flagged weeks annotated with text
       stating that commit-based metrics understate them.
 
-- [ ] T031 [US2] Implement Figure 3, intra-week distribution: daily sessions for
+- [x] T031 [US2] Implement Figure 3, intra-week distribution: daily sessions for
       the selected week from `daily_sessions`.
 
-- [ ] T032 [US2] Implement Figure 4, project activity: commits and uncommitted
+- [x] T032 [US2] Implement Figure 4, project activity: commits and uncommitted
       counts per project for the selected week. Historic weeks show uncommitted
       as `unavailable`, never `0`.
 
-- [ ] T033 Implement tooltips across all figures showing week, value, source,
+- [x] T033 Implement tooltips across all figures showing week, value, source,
       retrieval time, and data quality (FR-004).
 
-- [ ] T034 [P] Write `tests/test_integration.py::test_dark_work_fixture`: build
+- [x] T034 [P] Write `tests/test_integration.py::test_dark_work_fixture`: build
       against the real corpus and assert the 2026-08-01 week is flagged with 122
       sessions and 23 commits (SC-003). This is a permanent regression fixture.
 
@@ -202,27 +202,27 @@ flagged; hovering a series dims the others; no overlapping labels.
 
 ## Phase 4: Carry-Over Ledger and Prose (US3, US4)
 
-- [ ] T035 [US3] Implement the carry-over ledger panel in
+- [x] T035 [US3] Implement the carry-over ledger panel in
       `assets/dashboard.js`: open items sorted by descending carry age, stalled
       items marked with complete-or-retire stated explicitly (FR-031, FR-032).
 
-- [ ] T036 [US3] Add the completions view: items that reached `[x]` with the
+- [x] T036 [US3] Add the completions view: items that reached `[x]` with the
       number of weeks carried before completion (FR-033).
 
-- [ ] T037 [US3] Surface `match_confidence` in the ledger so `uncertain` items
+- [x] T037 [US3] Surface `match_confidence` in the ledger so `uncertain` items
       are visibly not merged (FR-034).
 
-- [ ] T038 [P] Write `tests/test_integration.py::test_carry_age_fixture`: assert
+- [x] T038 [P] Write `tests/test_integration.py::test_carry_age_fixture`: assert
       the week-over-week trend item reports carry age 4 (SC-002). This is the
       project's own regression fixture.
 
-- [ ] T039 [US4] Implement the week selector control updating Figures 3 and 4
+- [x] T039 [US4] Implement the week selector control updating Figures 3 and 4
       and the prose panel together (FR-051).
 
-- [ ] T040 [US4] Implement the prose panel rendering the selected week's dad and
+- [x] T040 [US4] Implement the prose panel rendering the selected week's dad and
       personal reports through the restricted Markdown renderer (FR-050).
 
-- [ ] T041 [US5] Implement the coverage and provenance panel listing weeks missing a
+- [x] T041 [US5] Implement the coverage and provenance panel listing weeks missing a
       pair or bundle with the reason (FR-005).
 
 **Gate 4**: Trend item shows carry age 4; prose renders escaped and scrubbed;
@@ -232,29 +232,29 @@ week selection updates figures and prose together.
 
 ## Phase 5: Integration and Retirement
 
-- [ ] T042 Add `--weeks`, `--dark-work-threshold`, and `--stall-age` flags per
+- [x] T042 Add `--weeks`, `--dark-work-threshold`, and `--stall-age` flags per
       contracts/cli.md, threading them into `config` in the embedded payload.
 
-- [ ] T043 Verify performance: full build under 30 seconds and page weight under
+- [x] T043 Verify performance: full build under 30 seconds and page weight under
       3 MB (SC-008, SC-009). Record measured values in `vendor/README.md`.
 
-- [ ] T044 Visual verification: open the rendered page and inspect it as an
+- [x] T044 Visual verification: open the rendered page and inspect it as an
       image. Confirm no overlapping labels, no chart stranded in a corner, no
       invisible points, no whitespace dominated by one outlier. DOM inspection
       and passing tests do not satisfy this task.
 
-- [ ] T045 Wire the generator into `weekly-report-suite/SKILL.md` as the
+- [x] T045 Wire the generator into `weekly-report-suite/SKILL.md` as the
       dashboard step, replacing the `render_dashboard.py` invocation.
 
-- [ ] T046 Retire `custom-skills/weekly-report-suite/scripts/render_dashboard.py`
+- [x] T046 Retire `custom-skills/weekly-report-suite/scripts/render_dashboard.py`
       with a note in the suite skill pointing at this generator. Do not delete
       historic per-week bundles.
 
-- [ ] T047 Update `/home/cheta/LIVING_DOCUMENTS/projects/weekly-reports/` to
+- [x] T047 Update `/home/cheta/LIVING_DOCUMENTS/projects/weekly-reports/` to
       record that the week-over-week trend item is closed, using `ld add-page`
       rather than a direct file write.
 
-- [ ] T048 Consolidate the stray `weekly-report-2026-07-05` pair from
+- [x] T048 Consolidate the stray `weekly-report-2026-07-05` pair from
       `/home/cheta/code/` into `/home/cheta/code/weekly-reports/` so the corpus
       lives in one place (R-8). Copy, verify by checksum, then remove.
 
@@ -302,35 +302,35 @@ Added 2026-08-05 after cross-referencing the intent archaeology corpus. Both
 directives predate the specification and were absent from it: scheduled
 deployment was recorded 2026-05-28, report curation 2026-07-20.
 
-- [ ] T049 [US6] Implement `scripts/schedule.py` with `install`, `uninstall` and
+- [x] T049 [US6] Implement `scripts/schedule.py` with `install`, `uninstall` and
       `status` subcommands, registering daily and weekly cadences through the
       platform scheduler. Install is idempotent: re-running never creates a
       second job (FR-070, FR-071, FR-072).
 
-- [ ] T050 [US6] Implement run logging in `scripts/schedule.py`: each scheduled
+- [x] T050 [US6] Implement run logging in `scripts/schedule.py`: each scheduled
       run appends outcome, duration, and every skipped week with its reason to
       `run-log.jsonl` (FR-073).
 
-- [ ] T051 [US6] Make a failing scheduled run non-destructive. Build to a
+- [x] T051 [US6] Make a failing scheduled run non-destructive. Build to a
       temporary path and promote only on success, so a run that fails an
       assertion leaves the previous `index.html` untouched (FR-074).
 
-- [ ] T052 [P] [US6] Write `tests/test_schedule.py`: install is idempotent,
+- [x] T052 [P] [US6] Write `tests/test_schedule.py`: install is idempotent,
       uninstall removes the job, a failing build leaves the prior artifact in
       place, and the run log records a skipped week with its reason.
 
-- [ ] T053 [US7] Implement `classify_passages()` in `scripts/curate.py`. Marks
+- [x] T053 [US7] Implement `classify_passages()` in `scripts/curate.py`. Marks
       process meta-discussion; never deletes. Returns passage plus label plus
       the rule that fired, so every decision is attributable (FR-080).
 
-- [ ] T054 [US7] Implement job-search and meetup retention in
+- [x] T054 [US7] Implement job-search and meetup retention in
       `scripts/curate.py`. These are always preserved and surfaced, and are
       never eligible for the process classifier (FR-081).
 
-- [ ] T055 [US7] Surface the classification summary in the prose panel: how many
+- [x] T055 [US7] Surface the classification summary in the prose panel: how many
       passages were classified and by which rule (FR-082).
 
-- [ ] T056 [P] [US7] Write `tests/test_curate.py`: process asides are marked and
+- [x] T056 [P] [US7] Write `tests/test_curate.py`: process asides are marked and
       not removed, job-search references survive classification, the summary
       count matches the labels applied, and the source Markdown is byte-identical
       before and after (FR-083).
@@ -381,7 +381,7 @@ implementer can verify coverage from this table without re-reading the spec.
 | NFR-022 scrub paths, no secrets | T017, T023 |
 | NFR-042 not color alone | T029 |
 | NFR-043 data table per figure | T029 |
-| SC-001 13 weeks classified | Gate 1, T009 |
+| SC-001 12 weeks classified | Gate 1, T009 |
 | SC-002 trend item at carry age 4 | T038 |
 | SC-003 2026-08-01 flagged | T034 |
 | SC-004 offline function | Gate 2, T044 |

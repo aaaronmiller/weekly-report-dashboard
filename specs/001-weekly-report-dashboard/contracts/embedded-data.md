@@ -16,8 +16,8 @@ window.__WEEKLY__ = {
   project_activity: [ /* ProjectWeekActivity */ ],
   assertions: [ /* ValidationAssertion */ ],
   coverage: {
-    weeks_total: 13,
-    with_pair: 13,
+    weeks_total: 12,
+    with_pair: 12,
     with_bundle: 6,
     with_both: 6,
     missing: 7

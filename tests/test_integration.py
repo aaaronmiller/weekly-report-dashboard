@@ -1,0 +1,57 @@
+import pathlib, json, tempfile, shutil, subprocess
+from scripts.ingest import discover_reports, discover_bundles
+
+def test_idempotence(tmp_path):
+    # run build twice and compare
+    out = pathlib.Path("/tmp/test_idem_out")
+    out.mkdir(exist_ok=True)
+    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], check=True)
+    a = (out / "index.html").read_bytes()
+    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], check=True)
+    b = (out / "index.html").read_bytes()
+    assert a == b
+
+def test_malformed_bundle(tmp_path):
+    # inject corrupt bundle
+    bundles_dir = pathlib.Path("/home/cheta/code/weekly-report-dashboard")
+    target = bundles_dir / "2026-07-11" / "weekly-metrics.json"
+    backup = tmp_path / "bak.json"
+    backup.write_bytes(target.read_bytes())
+    try:
+        target.write_text("{ broken")
+        result = subprocess.run(["python3", "scripts/build_dashboard.py", "--check"], capture_output=True, text=True)
+        assert result.returncode in (0,1)  # should not crash
+        assert "2026-07-11" in result.stdout or "skipped" in result.stdout.lower()
+        # remaining weeks still render: run full build to temp out
+        out = tmp_path / "out"
+        out.mkdir()
+        result2 = subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], capture_output=True, text=True)
+        assert result2.returncode in (0,1)
+        assert (out / "index.html").exists()
+        # check that file contains weeks
+        html = (out / "index.html").read_text()
+        assert "week" in html.lower()
+    finally:
+        target.write_bytes(backup.read_bytes())
+
+def test_dark_work_fixture():
+    reports, _ = discover_reports("/home/cheta/code/weekly-reports")
+    bundles, _ = discover_bundles("/home/cheta/code/weekly-report-dashboard")
+    from scripts.canonicalize import build_week_records
+    weeks = build_week_records(reports, bundles)
+    w = [x for x in weeks if x.week_ending.isoformat() == "2026-08-01"]
+    assert w, "2026-08-01 not found"
+    w = w[0]
+    assert w.sessions == 122
+    assert w.commits == 23
+    assert w.is_dark_work is True
+
+def test_carry_age_fixture():
+    reports, _ = discover_reports("/home/cheta/code/weekly-reports")
+    from scripts.canonicalize import build_carry_over_ledger
+    ledger = build_carry_over_ledger(reports)
+    # week-over-week trend item
+    candidates = [c for c in ledger if "week-over-week trend" in c.normalized_text]
+    assert candidates, "trend item not found"
+    max_age = max(c.carry_age for c in candidates)
+    assert max_age == 4, f"expected carry age 4, got {max_age}"

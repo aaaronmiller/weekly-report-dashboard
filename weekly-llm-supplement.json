@@ -1,0 +1,291 @@
+{
+  "generated_at": "2026-08-10T01:19:13.939445+00:00",
+  "ledger_insights": {
+    "easy_wins": [
+      "Review most-stalled carry-over (age 4) for retire/complete decision."
+    ],
+    "stall_commentary": "0 dark-work weeks detected; top SPC week needs commit-metrics caveat."
+  },
+  "meta": {
+    "delineation": "LLM supplement \u2014 canonical truth is scripting; this file is analysis only.",
+    "problems": [],
+    "source": "llm_supplement"
+  },
+  "model": "heuristic-fallback",
+  "prompt_hash": "15cc48127f2f",
+  "schema_version": 1,
+  "weeks": [
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 3 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-02-07"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 16 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-02-14"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 7 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-02-28"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 15 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-03-07"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 16 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-03-14"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 22 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-03-21"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 32 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-03-28"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 116 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-04-04"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 73 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-04-11"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 35 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-04-18"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 71 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-04-25"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 82 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-05-02"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 79 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-05-09"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 91 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-05-16"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending May 23 -- Dashboard Foundations: Infrastructure and Tooling Expansion Greetings, Strategic Overview This week focused on building the underlying systems. 79 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-05-23"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending May 24 -- Optimization Infrastructure: From Benchmarks to Karpathy Loops Greetings, Strategic Overview The arc of this week was automating the optimization process itself. No session metric for this week.",
+      "week_ending": "2026-05-24"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 30 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-05-30"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending May 31 -- Reporting Infrastructure and Model Gateway Planning Greetings, Strategic Overview This week focused on turning scattered project activity into systems that can be tracked, summarized, and improved over time. No session metric for this week.",
+      "week_ending": "2026-05-31"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 149 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-06-06"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending June 7 -- Reliability Repairs and New Project Direction Greetings, Strategic Overview This week was about stabilizing the working environment and turning recent research into clearer project direction. No session metric for this week.",
+      "week_ending": "2026-06-07"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 47 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-06-13"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending June 14 -- Two-Week Retrospective: Crash-Guard Maturation and Infrastructure Expansion Greetings, Strategic Overview The past two weeks have followed an interesting pattern. No session metric for this week.",
+      "week_ending": "2026-06-14"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 188 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-06-20"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending June 21 -- Gateway Planning Becomes Verified Routing Work: Reliability Tooling Continues Greetings, Strategic Overview This week broadened from last period's single-project crash-guard focus into a more balanced spread across several milestones. No session metric for this week.",
+      "week_ending": "2026-06-21"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 51 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-06-27"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending June 28 -- Infrastructure Consolidation: Memory, Skills, and Agent Routing Mature Greetings, Strategic Overview This week continued last period's move from isolated tool improvements into a broader operating system for agent work. No session metric for this week.",
+      "week_ending": "2026-06-28"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 134 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-07-04"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending July 4 -- Audits, Voice Assistant, and Infrastructure Depth Greetings, Strategic Overview This week was about depth over breadth. No session metric for this week.",
+      "week_ending": "2026-07-05"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending July 11 -- Research Discipline, Agent Ecosystem Mapping, and Reporting Infrastructure Greetings, Strategic Overview This week was a transition from broad infrastructure repair into clearer research and communication systems. 57 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-07-11"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 16 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-07-18"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending July 19 -- Consolidation, a Hard Failure, and a Fast Recovery Greetings, Strategic Overview This week had two halves. No session metric for this week.",
+      "week_ending": "2026-07-19"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending July 25 -- From One Launcher to Nine, and a Skill That Reads Every Prompt You Ever Wrote Greetings, Strategic Overview Last week was about surviving a failure and proving the recovery tools worked. 17 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-07-25"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "Subject: Week Ending August 1 -- Making the Workspace Legible: Archaeology, Lineage, and Tools That Catch Silent Failures Greetings, Strategic Overview Last week was about expanding what the system can do: nine agent platforms under one launcher, and a tool that reads years of session logs. 175 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-08-01"
+    },
+    {
+      "next_actions": [
+        "Continue throughput watch; no stall flag."
+      ],
+      "risks": [],
+      "summary_2s": "No prose for this week. 9 sessions; commit data unavailable \u2014 estimate dark-work from prose.",
+      "week_ending": "2026-08-08"
+    }
+  ]
+}

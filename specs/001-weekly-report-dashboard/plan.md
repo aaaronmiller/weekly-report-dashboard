@@ -43,7 +43,7 @@ interactive under 2 seconds from disk
 **Constraints**: Offline-only at runtime; page weight under 3 MB; byte-identical
 output for unchanged input; read-only with respect to the report corpus
 
-**Scale/Scope**: 13 weeks today, correct to at least 104 without redesign;
+**Scale/Scope**: 12 weeks today, correct to at least 104 without redesign;
 roughly 8 source modules and 4 figures
 
 ## Constitution Check

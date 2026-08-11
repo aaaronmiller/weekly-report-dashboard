@@ -1,0 +1,375 @@
+{
+  "files": [
+    {
+      "confidence": "normalized",
+      "lines": 87,
+      "path": ".agents/skills/weekly-llm-analysis/SKILL.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 261,
+      "path": ".claude/skills/speckit-analyze/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 373,
+      "path": ".claude/skills/speckit-checklist/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 255,
+      "path": ".claude/skills/speckit-clarify/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 158,
+      "path": ".claude/skills/speckit-constitution/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 211,
+      "path": ".claude/skills/speckit-implement/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 153,
+      "path": ".claude/skills/speckit-plan/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 331,
+      "path": ".claude/skills/speckit-specify/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 203,
+      "path": ".claude/skills/speckit-tasks/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 107,
+      "path": ".claude/skills/speckit-taskstoissues/SKILL.md",
+      "project": "skill.md"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 9,
+      "path": ".pytest_cache/README.md",
+      "project": "pytest"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 135,
+      "path": ".specify/memory/constitution.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": ".specify/templates/checklist-template.md",
+      "project": "checklist"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 51,
+      "path": ".specify/templates/constitution-template.md",
+      "project": "constitution"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 114,
+      "path": ".specify/templates/plan-template.md",
+      "project": "implementation"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 132,
+      "path": ".specify/templates/spec-template.md",
+      "project": "feature"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 253,
+      "path": ".specify/templates/tasks-template.md",
+      "project": "tasks"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 16,
+      "path": "2026-05-31/README.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 54,
+      "path": "2026-05-31/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 12,
+      "path": "2026-05-31/improvement-notes.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 306,
+      "path": "2026-05-31/personal-report.md",
+      "project": "week"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 96,
+      "path": "2026-06-21/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 675,
+      "path": "2026-06-21/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 90,
+      "path": "2026-06-28/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 455,
+      "path": "2026-06-28/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 54,
+      "path": "2026-07-05/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 302,
+      "path": "2026-07-05/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 16,
+      "path": "2026-07-11/README.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 45,
+      "path": "2026-07-11/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 149,
+      "path": "2026-07-11/personal-report.md",
+      "project": "week"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 16,
+      "path": "2026-08-01/README.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 48,
+      "path": "2026-08-01/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 219,
+      "path": "2026-08-01/personal-report.md",
+      "project": "week"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 99,
+      "path": "CLAUDE.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 93,
+      "path": "README.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 16,
+      "path": "daily/2026-06-02/README.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-06-02/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 148,
+      "path": "daily/2026-06-02/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-06-12/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 132,
+      "path": "daily/2026-06-12/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-06-22/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 103,
+      "path": "daily/2026-06-22/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-06-27/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 657,
+      "path": "daily/2026-06-27/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-06-29/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 104,
+      "path": "daily/2026-06-29/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-07-07/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 99,
+      "path": "daily/2026-07-07/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 41,
+      "path": "daily/2026-07-08/dad-report.md",
+      "project": "dad"
+    },
+    {
+      "confidence": "uncertain",
+      "lines": 143,
+      "path": "daily/2026-07-08/personal-report.md",
+      "project": "personal"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 51,
+      "path": "specs/001-weekly-report-dashboard/contracts/cli.md",
+      "project": "contract"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 53,
+      "path": "specs/001-weekly-report-dashboard/contracts/embedded-data.md",
+      "project": "contract"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 154,
+      "path": "specs/001-weekly-report-dashboard/data-model.md",
+      "project": "data"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 142,
+      "path": "specs/001-weekly-report-dashboard/plan.md",
+      "project": "implementation"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 76,
+      "path": "specs/001-weekly-report-dashboard/quickstart.md",
+      "project": "quickstart"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 166,
+      "path": "specs/001-weekly-report-dashboard/research.md",
+      "project": "research"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 362,
+      "path": "specs/001-weekly-report-dashboard/spec.md",
+      "project": "feature"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 402,
+      "path": "specs/001-weekly-report-dashboard/tasks.md",
+      "project": "tasks"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 391,
+      "path": "specs/design.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 323,
+      "path": "specs/requirements.md",
+      "project": "weekly"
+    },
+    {
+      "confidence": "normalized",
+      "lines": 11,
+      "path": "vendor/README.md",
+      "project": "vendor"
+    }
+  ],
+  "generated_at": "2026-08-10T07:36:56.484234+00:00",
+  "project_md": 61,
+  "root": "/home/cheta/code/weekly-report-dashboard",
+  "source": "vault_map per-file inference",
+  "total_md": 61
+}

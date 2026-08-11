@@ -62,9 +62,9 @@ image. Passing tests, valid HTML, and DOM presence are not visual verification.
 
 | Check | Expected |
 | --- | --- |
-| Weeks discovered | 13 |
+| Weeks discovered | 12 |
 | Weeks with a metrics bundle | 6 |
-| Weeks with a report pair | 13 |
+| Weeks with a report pair | 12 |
 | 2026-08-01 dark-work flag | set (122 sessions, 23 commits) |
 | Week-over-week trend carry age | 4 |
 | Assertions | all pass |

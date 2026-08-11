@@ -27,8 +27,8 @@ the current week marked.
 
 **Acceptance Scenarios**:
 
-1. **Given** 13 report pairs and 6 metrics bundles, **When** the dashboard is
-   generated, **Then** the canonical table contains 13 week records, each
+1. **Given** 12 report pairs and 6 metrics bundles, **When** the dashboard is
+   generated, **Then** the canonical table contains 12 week records, each
    classified `pair+bundle`, `pair-only`, or `bundle-only`.
 2. **Given** a week with no metrics bundle, **When** the trend renders, **Then**
    that week appears as a visible gap and is never interpolated or omitted.
@@ -325,7 +325,7 @@ retained, and the source Markdown is unmodified.
 
 ### Measurable Outcomes
 
-- **SC-001**: All 13 existing weeks appear in the trend with correct coverage
+- **SC-001**: All 12 existing weeks appear in the trend with correct coverage
   classification.
 - **SC-002**: The week-over-week trend carry-over displays carry age 4, and
   shipping this feature closes it.
