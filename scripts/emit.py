@@ -347,6 +347,20 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
     coverage_placeholder = f'<div id="coverage">Coverage: {total} weeks, {with_pair} with pair, {with_bundle} with bundle, {with_both} with both, {total-with_both} missing</div>'
     failure_banner = '<div id="failure-banner" style="display:none;"></div>'
 
+    # inline report HTML for the blog-style viewer (restricted renderer, escaped)
+    reports_html = {}
+    for w in sorted(weeks, key=lambda x: x.week_ending):
+        entry = {}
+        for key, p in (("dad", w.dad_report_path), ("personal", w.personal_report_path)):
+            if p and Path(p).exists():
+                try:
+                    entry[key] = render_markdown_restricted(Path(p).read_text(encoding="utf-8", errors="replace"))
+                except Exception:
+                    entry[key] = ""
+        if entry:
+            reports_html[w.week_ending.isoformat()] = entry
+    reports_json = json.dumps(reports_html, sort_keys=True, separators=(",", ":"))
+
     html_content = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -356,6 +370,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <style>{css_text}</style>
 </head>
 <body>
+<script>window.__REPORTS_HTML__ = {reports_json};</script>
 <header>
 <h1>Weekly Report Dashboard</h1>
 <div id="header-stats">Weeks: {total} | Pairs: {with_pair} | Bundles: {with_bundle} | Both: {with_both}</div>
@@ -510,7 +525,14 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </section>
 <div id="week-selector-wrap" style="margin:16px 24px;"><label style="color:#8a8f98;font-size:12px;">Select week for detail: <select id="week-selector" style="padding:6px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"></select></label></div>
 <section id="weekly-reports" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 8px;">Weekly Reports — browse & examine (perpetual)</h2>
+  <h2 style="margin:0 0 8px;">This Week — read the reports, then the data below</h2>
+  <div id="weekly-summary" style="font-size:13px;color:#c2c7d0;line-height:1.5;padding:10px 0;"></div>
+  <div style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+    <button id="report-prev" style="padding:6px 12px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;cursor:pointer;">← prev</button>
+    <select id="report-week" style="padding:6px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"></select>
+    <button id="report-next" style="padding:6px 12px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;cursor:pointer;">next →</button>
+  </div>
+  <div id="report-viewer" style="column-count:2;column-gap:28px;font-size:13px;line-height:1.6;color:#d8dce2;"></div>
   <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
     <input id="reports-search" placeholder="Search reports..." style="flex:1;min-width:200px;padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"/>
     <select id="reports-filter" style="padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">

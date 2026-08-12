@@ -1268,3 +1268,72 @@
     title:{text:'O3 · Notes by folder', textStyle:{color:'#f7f8f8'}},
     tooltip:{}, series:[{type:'treemap', data, roam:false, breadcrumb:{show:false}, label:{color:'#c2c7d0'}, emphasis:{focus:'series'}}]});
 })();
+
+/* ── This Week: inline report viewer + weekly summary + prose captions ─── */
+(function(){
+  const weeks = (window.__WEEKLY__ && window.__WEEKLY__.weeks) || [];
+  const reports = window.__REPORTS_HTML__ || {};
+  const viewer = document.getElementById('report-viewer');
+  const wsel = document.getElementById('report-week');
+  const prevB = document.getElementById('report-prev');
+  const nextB = document.getElementById('report-next');
+  const wsum = document.getElementById('weekly-summary');
+  if(!viewer || !wsel || !reports || !Object.keys(reports).length) return;
+  const order = Object.keys(reports).sort();
+  let idx = order.length - 1;
+  for(const w of order){ const o=document.createElement('option'); o.value=w; o.textContent=w; wsel.appendChild(o); }
+  function render(){
+    wsel.value = order[idx];
+    const w = order[idx];
+    const rep = reports[w] || {};
+    let html = '';
+    if(rep.personal) html += '<div style="break-inside:avoid;margin-bottom:16px;"><h3 style="color:#f7f8f8;font-size:14px;">Personal report</h3>'+rep.personal+'</div>';
+    if(rep.dad) html += '<div style="break-inside:avoid;"><h3 style="color:#f7f8f8;font-size:14px;">Dad report</h3>'+rep.dad+'</div>';
+    viewer.innerHTML = html || '<em style="color:#8a8f98;">No report text for this week.</em>';
+    // weekly summary (deterministic, from canonical data)
+    const wd = weeks.find(x=>x.week_ending===w);
+    if(wsum && wd){
+      wsum.textContent = `Week ending ${w}: ${wd.sessions!=null?wd.sessions+' sessions':'sessions n/a'}, ${wd.commits!=null?wd.commits+' commits':'commits n/a'}, ${wd.files_changed!=null?wd.files_changed+' files':'files n/a'}, ${wd.projects_active!=null?wd.projects_active+' active projects':'projects n/a'}. Coverage: ${wd.coverage}.`;
+    }
+  }
+  wsel.addEventListener('change', ()=>{ idx = order.indexOf(wsel.value); render(); });
+  prevB.addEventListener('click', ()=>{ idx = Math.max(0, idx-1); render(); });
+  nextB.addEventListener('click', ()=>{ idx = Math.min(order.length-1, idx+1); render(); });
+  render();
+})();
+(function(){ // prose captions under each chart: what it shows / why it's here
+  const CAP = {
+    'figure1':'Throughput trend — the weekly heartbeat: sessions, commits, files, active projects.',
+    'figure2':'Dark work — sessions per commit with the threshold band; flagged weeks understate effort.',
+    'figure-p1':'Commits, files changed, and sessions per month across all projects.',
+    'figure-p2':'Top projects by volume — where the week actually went.',
+    'figure-p3':'Momentum — activity change vs the prior month; green accelerating, red decelerating.',
+    'figure-h1':'Sessions and tokens per harness — which tool carried the load.',
+    'figure-h2':'Duration and tools-per-session per harness — how deep the sessions ran.',
+    'figure-h3':'Sessions per harness per month — the mix shifting over time.',
+    'figure-c1':'Claude Code daily messages and tool calls from its local usage cache.',
+    'figure-c2':'Claude Code tokens per day — the real volume.',
+    'figure-c3':'Token share by model (input+output+cache) — which Claude model does the work.',
+    'figure-v1':'Sessions and tokens per month — activity level.',
+    'figure-v2':'Market value of usage vs subscription spend, with the value ratio — the headline question.',
+    'figure-v3':'Which harness (and subscription) does the work.',
+    'figure-v4':'Efficiency: dollars per session and tokens per subscription dollar.',
+    'figure-v5':'Top models in the latest month — mostly the cheap stack.',
+    'figure-v6':'Cumulative market value vs cumulative spend — the trend that matters over time.',
+    'figure-v7':'Market value by subscription — which plan earns its keep.',
+    'figure-o1':'Notes created and words per month — vault growth.',
+    'figure-o2':'Tag cloud from YAML frontmatter — what the notes are about.',
+    'figure-o3':'Notes by folder — the vault structure.',
+    'figure-b1':'Browser visits per month — activity level.',
+    'figure-b2':'Top domains by visits — where browsing time goes.',
+    'figure-s1':'Package upgrades and shell commands per month — machine upkeep and CLI activity.'
+  };
+  for(const [id, txt] of Object.entries(CAP)){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const cap = document.createElement('div');
+    cap.textContent = txt;
+    cap.style.cssText = 'font-size:11px;color:#8a8f98;margin:-4px 0 12px 0;';
+    el.insertAdjacentElement('afterend', cap);
+  }
+})();
