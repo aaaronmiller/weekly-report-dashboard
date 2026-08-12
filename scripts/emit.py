@@ -361,6 +361,16 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <div id="header-stats">Weeks: {total} | Pairs: {with_pair} | Bundles: {with_bundle} | Both: {with_both}</div>
 <div id="generated-at">Generated: {generated_at.isoformat()}</div>
 <nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">⚙ Settings — schedule</a> | <span style="color:#8a8f98;font-size:12px;">Current: {config.get("schedule","daily")} </span></nav>
+<nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
+  <a href="#weekly-reports" style="color:#f7f8f8;">This Week</a>
+  <a href="#group-p" style="color:#8a8f98;">Projects</a>
+  <a href="#group-h" style="color:#8a8f98;">Harnesses</a>
+  <a href="#group-c" style="color:#8a8f98;">Claude</a>
+  <a href="#group-v" style="color:#8a8f98;">Sub Value</a>
+  <a href="#group-o" style="color:#8a8f98;">Obsidian</a>
+  <a href="#group-b" style="color:#8a8f98;">Browser</a>
+  <a href="#group-s" style="color:#8a8f98;">System</a>
+</nav>
 <div id="algorithm-bar" style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">
   <label style="font-size:12px;color:#8a8f98;">Data source:
     <select id="algo-source" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">

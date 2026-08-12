@@ -41,9 +41,23 @@ def build_browser_stats(problems: list[dict] | None = None) -> dict[str, Any]:
         problems.append({"path": str(CHROME_HISTORY), "reason": "chrome History not found; no browser data"})
         return {"months": [], "top_domains": [], "top_yt": [], "source": "chrome", "notes": ["Chrome History unavailable"]}
 
-    tmp = Path(tempfile.mkdtemp()) / "History"
+    # Consistent snapshot via SQLite backup (Chrome writes the DB live); cache
+    # keyed by source mtime so repeated builds are byte-identical (SC-005).
+    import hashlib
+    cache_dir = Path(tempfile.gettempdir()) / "wr-dashboard"
+    cache_dir.mkdir(exist_ok=True)
+    key = hashlib.sha256(str(CHROME_HISTORY.stat().st_mtime_ns).encode()).hexdigest()[:16]
+    tmp = cache_dir / f"history-{key}.db"
+    if not tmp.exists():
+        try:
+            src = sqlite3.connect(f"file:{CHROME_HISTORY}?mode=ro", uri=True)
+            dst = sqlite3.connect(tmp)
+            src.backup(dst)
+            dst.close(); src.close()
+        except Exception as e:
+            problems.append({"path": str(CHROME_HISTORY), "reason": f"backup failed: {e}"})
+            return {"months": [], "top_domains": [], "top_yt": [], "source": "chrome", "notes": [f"backup failed: {e}"]}
     try:
-        shutil.copy2(CHROME_HISTORY, tmp)
         con = sqlite3.connect(f"file:{tmp}?mode=ro", uri=True)
         cur = con.cursor()
         cur.execute("""SELECT v.visit_time, u.url, u.title FROM visits v JOIN urls u ON u.id = v.url
