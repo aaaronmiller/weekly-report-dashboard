@@ -17,6 +17,7 @@ GROUPS = {
     "B: Focus & Neglect": ["B1 Stacked sessions by project","B2 Neglect detector","B3 Easy-win finder","B4 Project heartbeat"],
     "C: Rhythm & Sustainability": ["C1 Contribution heatmap","C2 Daily distribution","C3 Commit size hist","C4 SPC×Files scatter"],
     "D: Narrative & Action": ["D1 Week story card","D2 Plan lane","D3 Diff since last week", "Table+Ledger+Prose (legacy)"],
+    "V: Subscription Value": ["V1 Activity (sessions+tokens)","V2 Value vs spend + ratio","V3 Harness mix","V4 Efficiency (cost/session, tokens/$)","V5 Top models"],
 }
 FLAT_VIZ = [v for lst in GROUPS.values() for v in lst] + ["F1 Throughput (legacy)","F2 SPC (legacy)","F3 Daily bars","F4 Project bars"]
 

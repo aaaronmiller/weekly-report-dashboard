@@ -57,6 +57,14 @@ def main(argv=None):
         primary_problems.append({"path": "primary_audit", "reason": f"primary discovery failed: {e}"})
         primary_weekly = {}
 
+    # subscription value analysis (cass conversations): value of paid plans over time
+    subscription_value = {}
+    try:
+        from scripts.subscription_value import build_subscription_value
+        subscription_value = build_subscription_value(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "subscription_value", "reason": f"subscription value failed: {e}"})
+
     # problems to report — primary first, then legacy
     all_problems = primary_problems + report_problems + bundle_problems
 
@@ -170,7 +178,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary

@@ -746,3 +746,137 @@
 
   // Tooltips already via echarts tooltip formatter includes source/quality
 })();
+
+/* ── V: Subscription Value — what the paid plans buy over time ──────────── */
+(function(){
+  const sv = (window.__WEEKLY__ && window.__WEEKLY__.subscription_value) || null;
+  const gv = document.getElementById('group-v');
+  if(!gv) return;
+  const months = (sv && sv.months) || [];
+  const sum = document.getElementById('group-v-summary');
+  if(!months.length){
+    if(sum) sum.textContent = 'Subscription value: no cass data available (cass DB missing or empty).';
+    return;
+  }
+  const tot = sv.totals || {};
+  const ratioRange = months.map(m=>m.value_ratio).filter(v=>v!=null);
+  const peak = ratioRange.length ? Math.max(...ratioRange) : 0;
+  const peakMonth = months.filter(m=>m.value_ratio===peak).map(m=>m.month).join(',');
+  if(sum){
+    const lastPlans = months[months.length-1].plans || {};
+    const planLine = Object.keys(lastPlans).map(pid=>`${(sv.plans[pid]||{}).label||pid}: ${lastPlans[pid].sessions} sess / $${lastPlans[pid].market_value}`).join(' · ');
+    sum.textContent = `${months.length} months · ${tot.sessions} sessions · ${tot.tokens_M}M tokens · market value $${tot.market_value} vs $${tot.sub_cost} in subscriptions (${months[0].month}–${months[months.length-1].month}). Peak value ratio ${peak}× (${peakMonth}); ${months[0].value_ratio}× in ${months[0].month} was the low point. Jul–Aug token data missing (cass ingest gap) — sessions only. Latest month plans: ${planLine}.`;
+  }
+  const vc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  const base = { backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    tooltip:{trigger:'axis'}, grid:{left:56,right:60,top:40,bottom:40} };
+  const lbl = { color:'#8a8f98' };
+  const xd = months.map(m=>m.month);
+  const covTip = (params)=>{ const i=params[0].dataIndex; const m=months[i]; return `${m.month}<br/>sessions ${m.sessions} · tokens ${m.coverage_tokens>0?m.tokens_M+'M':'n/a'} · coverage ${Math.round(m.coverage_tokens*100)}%`; };
+
+  // V1 sessions (bar) + tokens M (line, right axis)
+  (function(){
+    const c = vc('figure-v1'); if(!c) return;
+    c.setOption(Object.assign({}, base, {
+      title:{text:'V1 · Activity: sessions per month + tokens (M)', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis', formatter:covTip},
+      legend:{data:['Sessions','Tokens M'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:xd, axisLabel:lbl}, yAxis:[
+        {type:'value', name:'sessions', axisLabel:lbl},
+        {type:'value', name:'tokens M', axisLabel:lbl, splitLine:{show:false}}
+      ],
+      series:[
+        {name:'Sessions', type:'bar', data:months.map(m=>m.sessions), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Tokens M', type:'line', yAxisIndex:1, data:months.map(m=>m.coverage_tokens>0?m.tokens_M:null), itemStyle:{color:'#4ecdc4'}, connectNulls:false, lineStyle:{color:'#4ecdc4'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}, labelLayout:{hideOverlap:true}}
+      ]
+    }));
+  })();
+
+  // V2 market value vs sub cost + value ratio — the core value chart
+  (function(){
+    const c = vc('figure-v2'); if(!c) return;
+    c.setOption(Object.assign({}, base, {
+      title:{text:'V2 · Market value of usage vs subscription spend + ratio', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis', formatter:covTip},
+      legend:{data:['Market value $','Sub spend $','Value ratio ×'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:xd, axisLabel:lbl}, yAxis:[
+        {type:'value', name:'$', axisLabel:lbl},
+        {type:'value', name:'ratio ×', axisLabel:lbl, splitLine:{show:false}}
+      ],
+      series:[
+        {name:'Market value $', type:'bar', data:months.map(m=>m.market_value), itemStyle:{color:'#4ecdc4'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{show:true, position:'top', color:'#c2c7d0', formatter:p=>p.value>0?('$'+p.value):''}},
+        {name:'Sub spend $', type:'bar', data:months.map(m=>m.sub_cost), itemStyle:{color:'#8a8f98'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Value ratio ×', type:'line', yAxisIndex:1, data:months.map(m=>m.value_ratio), itemStyle:{color:'#ffb020'}, lineStyle:{color:'#ffb020'}, symbol:'diamond', connectNulls:false, emphasis:{focus:'series',blurScope:'coordinateSystem'}, labelLayout:{hideOverlap:true}}
+      ]
+    }));
+  })();
+
+  // V3 per-harness session mix (stacked) — which sub does the work
+  (function(){
+    const c = vc('figure-v3'); if(!c) return;
+    const harnesses = ['claude_code','opencode','hermes','pi_agent','codex','gemini','antigravity','qwen','unknown'];
+    const palette = ['#7170ff','#4ecdc4','#ffb020','#ff7a7a','#a0e8af','#e879f9','#f9a8d4','#8a8f98','#5c6370'];
+    const series = harnesses.map((h,i)=>({name:h, type:'bar', stack:'total', data:months.map(m=>m.harness[h]||0), itemStyle:{color:palette[i]}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}))
+      .filter(s=>s.data.some(v=>v>0));
+    c.setOption(Object.assign({}, base, {
+      title:{text:'V3 · Which harness (and sub) does the work — sessions', textStyle:{color:'#f7f8f8'}},
+      legend:{data:series.map(s=>s.name), textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:xd, axisLabel:lbl}, yAxis:{type:'value', axisLabel:lbl},
+      series
+    }));
+  })();
+
+  // V4 efficiency: cost per session + tokens per dollar
+  (function(){
+    const c = vc('figure-v4'); if(!c) return;
+    c.setOption(Object.assign({}, base, {
+      title:{text:'V4 · Efficiency: $ per session + tokens per $ of sub spend', textStyle:{color:'#f7f8f8'}},
+      legend:{data:['$/session','tokens/$'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:xd, axisLabel:lbl}, yAxis:[
+        {type:'value', name:'$/session', axisLabel:lbl},
+        {type:'value', name:'tokens per $', axisLabel:lbl, splitLine:{show:false}}
+      ],
+      series:[
+        {name:'$/session', type:'line', data:months.map(m=>m.cost_per_session), itemStyle:{color:'#ff7a7a'}, connectNulls:false, lineStyle:{color:'#ff7a7a'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'tokens/$', type:'line', yAxisIndex:1, data:months.map(m=>m.tokens_per_dollar), itemStyle:{color:'#4ecdc4'}, connectNulls:false, lineStyle:{color:'#4ecdc4'}, symbol:'diamond', emphasis:{focus:'series',blurScope:'coordinateSystem'}, labelLayout:{hideOverlap:true}}
+      ]
+    }));
+  })();
+
+  // V5 top models by sessions per month (top 3, horizontal bars)
+  (function(){
+    const c = vc('figure-v5'); if(!c) return;
+    const last = months[months.length-1];
+    const models = (last && last.top_models) || [];
+    const names = models.map(x=>x[0].slice(0,26));
+    c.setOption(Object.assign({}, base, {
+      title:{text:`V5 · Top models by sessions — ${last ? last.month : ''}`, textStyle:{color:'#f7f8f8'}},
+      grid:{left:160,right:40,top:40,bottom:30},
+      xAxis:{type:'value', axisLabel:lbl}, yAxis:{type:'category', data:names.reverse(), axisLabel:lbl},
+      series:[{type:'bar', data:models.map(x=>x[1]).reverse(), itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{show:true, position:'right', color:'#c2c7d0'}}]
+    }));
+  })();
+
+  // monthly table
+  (function(){
+    const tb = document.getElementById('group-v-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Month','Sessions','Tokens M','Coverage','Market value $','Sub spend $','Ratio ×','$/session','Tool calls','Plan split (sess / $)'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+    for(const m of months){
+      html += '<tr>'+
+        `<td style="padding:6px;border-bottom:1px solid #222;">${m.month}</td>`+
+        `<td>${m.sessions}</td>`+
+        `<td>${m.coverage_tokens>0 ? m.tokens_M : '—'}</td>`+
+        `<td>${Math.round(m.coverage_tokens*100)}%</td>`+
+        `<td>${m.market_value>0 ? '$'+m.market_value : '—'}</td>`+
+        `<td>$${m.sub_cost}</td>`+
+        `<td>${m.value_ratio!=null ? m.value_ratio+'×' : '—'}</td>`+
+        `<td>${m.cost_per_session!=null ? '$'+m.cost_per_session : '—'}</td>`+
+        `<td>${m.tool_calls}</td>`+
+        `<td style="font-size:11px;color:#8a8f98;">${Object.entries(m.plans||{}).map(([pid,v])=>pid.replace('_',' ')+': '+v.sessions+'/$'+v.market_value).join(' | ')}</td>`+
+        '</tr>';
+    }
+    html += '</tbody></table><div style="font-size:11px;color:#8a8f98;margin-top:8px;">'+(sv.notes||[]).join(' · ')+'</div>';
+    tb.innerHTML = html;
+  })();
+})();
