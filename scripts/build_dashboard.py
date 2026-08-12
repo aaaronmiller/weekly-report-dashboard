@@ -57,6 +57,14 @@ def main(argv=None):
         primary_problems.append({"path": "primary_audit", "reason": f"primary discovery failed: {e}"})
         primary_weekly = {}
 
+    # projects stats (cass workspaces + git log): what each project did
+    projects_stats = {}
+    try:
+        from scripts.projects_stats import build_projects_stats
+        projects_stats = build_projects_stats(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "projects_stats", "reason": f"projects stats failed: {e}"})
+
     # harness-standardized stats (cass + muse): one schema per harness
     harness_stats = {}
     try:
@@ -186,7 +194,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary

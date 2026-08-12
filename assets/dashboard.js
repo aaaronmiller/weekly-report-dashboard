@@ -945,3 +945,64 @@
     tb.innerHTML = html;
   })();
 })();
+
+/* ── P: Projects — what each project did ────────────────────────────────── */
+(function(){
+  const ps = (window.__WEEKLY__ && window.__WEEKLY__.projects_stats) || null;
+  const gp = document.getElementById('group-p');
+  if(!gp || !ps) return;
+  const rows = ps.projects || [];
+  const sum = document.getElementById('group-p-summary');
+  if(sum){
+    const busy = rows.slice(0,5).map(p=>`${p.project} (${p.sessions}s/${p.commits}c)`).join(', ');
+    const totC = rows.reduce((a,p)=>a+(p.commits||0),0);
+    sum.textContent = `${rows.length} projects · ${rows.reduce((a,p)=>a+p.sessions,0)} sessions · ${totC} commits (since 2026-02). Busiest: ${busy}.`;
+  }
+  const pc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  // P1 monthly commits + sessions (git aggregate)
+  (function(){
+    const c = pc('figure-p1'); if(!c) return;
+    const ms = ps.months || [];
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'P1 · Commits, files changed, sessions per month (all projects)', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Commits','Files changed','Sessions'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:ms.map(m=>m.month), axisLabel:{color:'#8a8f98'}},
+      yAxis:[{type:'value', axisLabel:{color:'#8a8f98'}},{type:'value', axisLabel:{color:'#8a8f98'}, splitLine:{show:false}}],
+      grid:{left:50,right:50,top:40,bottom:40},
+      series:[
+        {name:'Commits', type:'bar', data:ms.map(m=>m.commits), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Files changed', type:'bar', data:ms.map(m=>m.files), itemStyle:{color:'#4ecdc4'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Sessions', type:'line', yAxisIndex:1, data:ms.map(m=>m.sessions), itemStyle:{color:'#ffb020'}, lineStyle:{color:'#ffb020'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  // P2 top projects by sessions + commits
+  (function(){
+    const c = pc('figure-p2'); if(!c) return;
+    const top = rows.slice(0,12).slice().reverse();
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'P2 · Top projects by sessions and commits', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Sessions','Commits'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, yAxis:{type:'category', data:top.map(p=>p.project.slice(0,26)).reverse(), axisLabel:{color:'#8a8f98'}},
+      grid:{left:150,right:40,top:40,bottom:30},
+      series:[
+        {name:'Sessions', type:'bar', data:top.map(p=>p.sessions), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Commits', type:'bar', data:top.map(p=>p.commits||0), itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  // table
+  (function(){
+    const tb = document.getElementById('group-p-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Project','Sessions','Avg min','Tools/session','Tokens M','Commits','Top models'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+    for(const p of rows.slice(0,40)){
+      html += '<tr>'+
+        `<td style="padding:6px;border-bottom:1px solid #222;">${p.project==='?'?'(unattributed)':p.project}</td>`+
+        `<td>${p.sessions}</td><td>${p.avg_dur_min!=null?p.avg_dur_min:'—'}</td><td>${p.tools_per_session!=null?p.tools_per_session:'—'}</td>`+
+        `<td>${p.tokens_M}</td><td>${p.commits||0}</td>`+
+        `<td style="font-size:11px;color:#8a8f98;">${(p.top_models||[]).map(x=>x[0].slice(0,16)+' ×'+x[1]).join(', ')}</td>`+
+        '</tr>';
+    }
+    html += '</tbody></table><div style="font-size:11px;color:#8a8f98;margin-top:8px;">'+(ps.notes||[]).join(' · ')+'</div>';
+    tb.innerHTML = html;
+  })();
+})();
