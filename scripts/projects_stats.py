@@ -150,6 +150,19 @@ def build_projects_stats(problems: list[dict] | None = None) -> dict[str, Any]:
             months.setdefault(m, {"month": m, "commits": 0, "files": 0, "sessions": 0})["sessions"] += c
     month_out = sorted(months.values(), key=lambda x: x["month"])
 
+    # momentum: per-project delta between the two most recent active months
+    from collections import defaultdict
+    for p in projects:
+        sm = p["sessions_by_month"]
+        cm = p["commits_by_month"]
+        active = sorted(set(list(sm.keys()) + list(cm.keys())))
+        p["momentum"] = None
+        if len(active) >= 2:
+            last, prev = active[-1], active[-2]
+            cur = sm.get(last, 0) + cm.get(last, 0)
+            prior = sm.get(prev, 0) + cm.get(prev, 0)
+            if prior > 0:
+                p["momentum"] = round((cur - prior) / prior, 2)
     return {"projects": projects, "months": month_out,
             "source": "cass workspaces + git log (code/)",
             "notes": ["Git scan bounded at 60s; repos beyond the cap are skipped and noted.",

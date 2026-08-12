@@ -1006,3 +1006,66 @@
     tb.innerHTML = html;
   })();
 })();
+
+/* ── O: Obsidian Vault ──────────────────────────────────────────────────── */
+(function(){
+  const os = (window.__WEEKLY__ && window.__WEEKLY__.obsidian_stats) || null;
+  const go = document.getElementById('group-o');
+  if(!go || !os) return;
+  const sum = document.getElementById('group-o-summary');
+  if(sum){
+    sum.textContent = `${os.total_docs} notes across ${os.vaults.length} vaults · avg ${os.avg_words||'—'} words · ${os.months.length} month(s) of activity. ${os.notes[0]}`;
+  }
+  const oc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  (function(){ // O1 docs + words per month
+    const c = oc('figure-o1'); if(!c) return;
+    const ms = os.months || [];
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'O1 · Notes created and words per month', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Notes','Words'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:ms.map(m=>m.month), axisLabel:{color:'#8a8f98'}},
+      yAxis:[{type:'value', axisLabel:{color:'#8a8f98'}},{type:'value', axisLabel:{color:'#8a8f98'}, splitLine:{show:false}}],
+      grid:{left:50,right:50,top:40,bottom:40},
+      series:[
+        {name:'Notes', type:'bar', data:ms.map(m=>m.docs), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Words', type:'line', yAxisIndex:1, data:ms.map(m=>m.words), itemStyle:{color:'#4ecdc4'}, lineStyle:{color:'#4ecdc4'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  (function(){ // O2 tags cloud (top bars)
+    const c = oc('figure-o2'); if(!c) return;
+    const tags = (os.tags_cloud||[]).slice(0,20);
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'O2 · Tag cloud (frontmatter, top 20)', textStyle:{color:'#f7f8f8'}},
+      tooltip:{}, xAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, yAxis:{type:'category', data:tags.map(t=>t[0].slice(0,22)).reverse(), axisLabel:{color:'#8a8f98'}},
+      grid:{left:130,right:40,top:40,bottom:30},
+      series:[{type:'bar', data:tags.map(t=>t[1]).reverse(), itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}]});
+  })();
+  (function(){
+    const tb = document.getElementById('group-o-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Month','Notes','Words','Folders (top)','Models (frontmatter)'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+    for(const m of os.months||[]){
+      html += '<tr><td style="padding:6px;border-bottom:1px solid #222;">'+m.month+'</td><td>'+m.docs+'</td><td>'+m.words+'</td><td style="font-size:11px;color:#8a8f98;">'+(os.folders||[]).slice(0,5).map(f=>f[0].slice(0,16)+' ×'+f[1]).join(', ')+'</td><td style="font-size:11px;color:#8a8f98;">'+(os.models||[]).map(x=>x[0].slice(0,16)+' ×'+x[1]).join(', ')+'</td></tr>';
+    }
+    html += '</tbody></table>';
+    tb.innerHTML = html;
+  })();
+})();
+
+/* ── P3 momentum appended to group-p (CASS momentum per project) ───────── */
+(function(){
+  const ps = (window.__WEEKLY__ && window.__WEEKLY__.projects_stats) || null;
+  if(!ps) return;
+  const c = document.getElementById('figure-p3');
+  if(!c || typeof echarts==='undefined') return;
+  const withMom = (ps.projects||[]).filter(p=>p.momentum!=null).sort((a,b)=>b.momentum-a.momentum).slice(0,12);
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'P3 · Momentum: change in activity (sessions+commits) last vs prior month', textStyle:{color:'#f7f8f8'}},
+    tooltip:{}, xAxis:{type:'value', axisLabel:{color:'#8a8f98'}, name:'Δ%'},
+    yAxis:{type:'category', data:withMom.map(p=>p.project.slice(0,22)).reverse(), axisLabel:{color:'#8a8f98'}},
+    grid:{left:150,right:40,top:40,bottom:30},
+    series:[{type:'bar', data:withMom.map(p=>p.momentum*100).reverse(),
+      itemStyle:{color:(p)=> p.value>=0 ? '#4ecdc4' : '#ff7a7a'},
+      emphasis:{focus:'series',blurScope:'coordinateSystem'},
+      label:{show:true, position:'right', color:'#c2c7d0', formatter:p=>p.value>=0?'+'+Math.round(p.value)+'%':Math.round(p.value)+'%'}}]});
+})();

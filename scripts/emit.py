@@ -157,7 +157,7 @@ def _curate_summary_for_week_legacy(w):
     except Exception:
         return {}
 
-def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None) -> str:
+def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None) -> str:
     """Produce window.__WEEKLY__ JSON string with sorted keys and fixed separators.
     alternatives may contain carry_over_exact, curate_legacy etc. for dropdown switching."""
     # canonical is tuple of (weeks, carry_over, project_activity)
@@ -291,6 +291,9 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     # projects stats: cass workspaces + git log
     if projects_stats:
         payload["projects_stats"] = projects_stats
+    # obsidian vault stats
+    if obsidian_stats:
+        payload["obsidian_stats"] = obsidian_stats
     # compute adaptive threshold value for tooltip
     try:
         from scripts.canonicalize import compute_dark_work_threshold_adaptive
@@ -303,13 +306,13 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
 
 
-def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None) -> Path:
+def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None) -> Path:
     """Write single index.html with CSS and payload inlined. Include header, canonical table, failure banner."""
     from scripts.emit import serialize_payload as sp
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     weeks, carry_over, project_activity = canonical
-    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats)
+    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats)
     # llm supplement payload (small JSON also inlined as separate window global for delineation)
     llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"))
 
@@ -429,11 +432,19 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-d3" style="min-height:100px;"></div>
   <div id="viz-audit" style="margin-top:14px;padding:10px;background:rgba(113,112,255,0.08);border-radius:8px;font-size:11px;color:#8a8f98;"></div>
 </section>
+<section id="group-o" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
+  <h2 style="margin:0 0 6px;">O: Obsidian Vault — notes, length, tags, frontmatter</h2>
+  <div id="group-o-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
+  <div id="figure-o1" class="chart" style="height:280px;"></div>
+  <div id="figure-o2" class="chart" style="height:280px;"></div>
+  <div id="group-o-table"></div>
+</section>
 <section id="group-p" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
   <h2 style="margin:0 0 6px;">P: Projects — what each project did</h2>
   <div id="group-p-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
   <div id="figure-p1" class="chart" style="height:300px;"></div>
   <div id="figure-p2" class="chart" style="height:300px;"></div>
+  <div id="figure-p3" class="chart" style="height:300px;"></div>
   <div id="group-p-table"></div>
 </section>
 <section id="group-h" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">

@@ -65,6 +65,14 @@ def main(argv=None):
     except Exception as e:
         primary_problems.append({"path": "projects_stats", "reason": f"projects stats failed: {e}"})
 
+    # obsidian vault stats: docs, length, tags, frontmatter
+    obsidian_stats = {}
+    try:
+        from scripts.obsidian_stats import build_obsidian_stats
+        obsidian_stats = build_obsidian_stats(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "obsidian_stats", "reason": f"obsidian stats failed: {e}"})
+
     # harness-standardized stats (cass + muse): one schema per harness
     harness_stats = {}
     try:
@@ -147,15 +155,16 @@ def main(argv=None):
         # when not --check, we still write output but will exit 1 after writing
         pass
 
-    # derive generated_at from newest input mtime, not wall-clock
+    # derive generated_at from newest input mtime, not wall-clock.
+    # Canonical inputs only (report markdown): bundle metrics are derived
+    # artifacts whose mtimes can be touched by external processes, which would
+    # break byte-identical rebuilds (SC-005).
     input_paths: list[Path] = []
     for rep in reports.values():
         if rep.get("dad_path"):
             input_paths.append(Path(rep["dad_path"]))
         if rep.get("personal_path"):
             input_paths.append(Path(rep["personal_path"]))
-    for d in Path(args.bundles).glob("*/weekly-metrics.json"):
-        input_paths.append(d)
     generated_at = newest_mtime(input_paths)
 
     # include schedule from config.env for settings page
@@ -194,7 +203,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary
