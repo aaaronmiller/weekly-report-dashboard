@@ -880,3 +880,68 @@
     tb.innerHTML = html;
   })();
 })();
+
+/* ── H: Harness Activity — standardized schema per harness ─────────────── */
+(function(){
+  const hs = (window.__WEEKLY__ && window.__WEEKLY__.harness_stats) || null;
+  const gh = document.getElementById('group-h');
+  if(!gh || !hs) return;
+  const rows = hs.harness || [];
+  const sum = document.getElementById('group-h-summary');
+  if(sum){
+    const top = rows.slice().sort((a,b)=>b.sessions-a.sessions)[0];
+    sum.textContent = `${rows.length} harnesses · ${rows.reduce((a,h)=>a+h.sessions,0)} sessions · ${hs.source}. Leader: ${top.harness} (${top.sessions} sessions, ${top.tokens_M}M tokens, ${top.tools_per_session} tools/session). Muse (${hs.muse&&hs.muse.months?hs.muse.months.length:0} months) read directly from session dirs.`;
+  }
+  const hc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  const names = rows.map(h=>h.harness);
+  // H1 sessions + tokens per harness
+  (function(){
+    const c = hc('figure-h1'); if(!c) return;
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'H1 · Sessions and tokens by harness', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Sessions','Tokens M'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:names, axisLabel:{color:'#8a8f98', rotate:20, hideOverlap:true}},
+      yAxis:[{type:'value', axisLabel:{color:'#8a8f98'}},{type:'value', axisLabel:{color:'#8a8f98'}, splitLine:{show:false}}],
+      grid:{left:50,right:50,top:40,bottom:50},
+      series:[
+        {name:'Sessions', type:'bar', data:rows.map(h=>h.sessions), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Tokens M', type:'line', yAxisIndex:1, data:rows.map(h=>h.tokens_M||null), connectNulls:false, itemStyle:{color:'#4ecdc4'}, lineStyle:{color:'#4ecdc4'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  // H2 duration + tools per session
+  (function(){
+    const c = hc('figure-h2'); if(!c) return;
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'H2 · Avg duration (min) and tools per session by harness', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Avg min','Tools/session'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:names, axisLabel:{color:'#8a8f98', rotate:20, hideOverlap:true}},
+      yAxis:[{type:'value', axisLabel:{color:'#8a8f98'}},{type:'value', axisLabel:{color:'#8a8f98'}, splitLine:{show:false}}],
+      grid:{left:50,right:50,top:40,bottom:50},
+      series:[
+        {name:'Avg min', type:'bar', data:rows.map(h=>h.avg_dur_min), itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Tools/session', type:'line', yAxisIndex:1, data:rows.map(h=>h.tools_per_session), itemStyle:{color:'#ff7a7a'}, lineStyle:{color:'#ff7a7a'}, symbol:'diamond', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  // standardized table
+  (function(){
+    const tb = document.getElementById('group-h-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Harness','Sessions','Avg min','Median min','Tools','Tools/session','API calls','Tokens M','Top models','Top workspaces'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+    for(const h of rows){
+      html += '<tr>'+
+        `<td style="padding:6px;border-bottom:1px solid #222;">${h.harness}</td>`+
+        `<td>${h.sessions}</td><td>${h.avg_dur_min!=null?h.avg_dur_min:'—'}</td><td>${h.median_dur_min!=null?h.median_dur_min:'—'}</td>`+
+        `<td>${h.tool_calls}</td><td>${h.tools_per_session!=null?h.tools_per_session:'—'}</td><td>${h.api_calls}</td><td>${h.tokens_M}</td>`+
+        `<td style="font-size:11px;color:#8a8f98;">${(h.top_models||[]).map(x=>x[0].slice(0,18)+' ×'+x[1]).join(', ')}</td>`+
+        `<td style="font-size:11px;color:#8a8f98;">${(h.top_workspaces||[]).map(x=>x[0].slice(0,14)+' ×'+x[1]).join(', ')}</td>`+
+        '</tr>';
+    }
+    if(hs.muse && hs.muse.months && hs.muse.months.length){
+      for(const m of hs.muse.months){
+        html += '<tr><td>muse</td><td>'+m.sessions+'</td><td>'+(m.avg_min!=null?m.avg_min:'—')+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-size:11px;color:#8a8f98;">'+m.month+'</td><td style="font-size:11px;color:#8a8f98;">direct read</td></tr>';
+      }
+    }
+    html += '</tbody></table>';
+    tb.innerHTML = html;
+  })();
+})();
