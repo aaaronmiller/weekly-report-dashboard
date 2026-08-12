@@ -1337,3 +1337,31 @@
     el.insertAdjacentElement('afterend', cap);
   }
 })();
+
+/* ── H4 token share per harness; P4 commits per repo (latest 3 months) ──── */
+(function(){ // H4 tokens M per harness (data: harness_stats.harness)
+  const hs = (window.__WEEKLY__ && window.__WEEKLY__.harness_stats) || null;
+  const c = document.getElementById('figure-h4');
+  if(!c || !hs || typeof echarts==='undefined') return;
+  const rows = (hs.harness||[]).filter(h=>h.tokens_M>0).sort((a,b)=>b.tokens_M-a.tokens_M).slice(0,8);
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'H4 · Tokens (M) per harness', textStyle:{color:'#f7f8f8'}},
+    tooltip:{}, xAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+    yAxis:{type:'category', data:rows.map(h=>h.harness).reverse(), axisLabel:{color:'#8a8f98'}},
+    grid:{left:120,right:40,top:40,bottom:30},
+    series:[{type:'bar', data:rows.map(h=>h.tokens_M).reverse(), itemStyle:{color:'#4ecdc4'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{show:true, position:'right', color:'#c2c7d0'}}]});
+})();
+(function(){ // P4 commits per repo per month (stacked; data: projects_stats.projects commits_by_month)
+  const ps = (window.__WEEKLY__ && window.__WEEKLY__.projects_stats) || null;
+  const c = document.getElementById('figure-p4');
+  if(!c || !ps || typeof echarts==='undefined') return;
+  const top = (ps.projects||[]).filter(p=>p.commits>0).sort((a,b)=>b.commits-a.commits).slice(0,8);
+  const months=[...new Set(top.flatMap(p=>Object.keys(p.commits_by_month||{})))].sort();
+  const palette=['#7170ff','#4ecdc4','#ffb020','#ff7a7a','#a0e8af','#e879f9','#f9a8d4','#8a8f98'];
+  const series = top.map((p,i)=>({name:p.project.slice(0,16), type:'bar', stack:'c', data:months.map(m=>p.commits_by_month[m]||0), itemStyle:{color:palette[i%8]}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}));
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'P4 · Commits per repo per month', textStyle:{color:'#f7f8f8'}},
+    tooltip:{trigger:'axis'}, legend:{data:series.map(s=>s.name), textStyle:{color:'#8a8f98'}, type:'scroll'},
+    xAxis:{type:'category', data:months, axisLabel:{color:'#8a8f98'}}, yAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+    grid:{left:50,right:20,top:40,bottom:40}, series});
+})();

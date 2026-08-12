@@ -501,6 +501,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-p1" class="chart" style="height:300px;"></div>
   <div id="figure-p2" class="chart" style="height:300px;"></div>
   <div id="figure-p3" class="chart" style="height:300px;"></div>
+  <div id="figure-p4" class="chart" style="height:300px;"></div>
   <div id="group-p-table"></div>
 </section>
 <section id="group-h" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
@@ -509,6 +510,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-h1" class="chart" style="height:300px;"></div>
   <div id="figure-h2" class="chart" style="height:300px;"></div>
   <div id="figure-h3" class="chart" style="height:300px;"></div>
+  <div id="figure-h4" class="chart" style="height:280px;"></div>
   <div id="group-h-table"></div>
 </section>
 <section id="group-v" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
