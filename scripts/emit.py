@@ -436,6 +436,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="group-c-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
   <div id="figure-c1" class="chart" style="height:280px;"></div>
   <div id="figure-c2" class="chart" style="height:280px;"></div>
+  <div id="figure-c3" class="chart" style="height:300px;"></div>
   <div id="group-c-table"></div>
 </section>
 <section id="group-s" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
@@ -476,6 +477,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="group-o-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
   <div id="figure-o1" class="chart" style="height:280px;"></div>
   <div id="figure-o2" class="chart" style="height:280px;"></div>
+  <div id="figure-o3" class="chart" style="height:280px;"></div>
   <div id="group-o-table"></div>
 </section>
 <section id="group-p" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
@@ -491,6 +493,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="group-h-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
   <div id="figure-h1" class="chart" style="height:300px;"></div>
   <div id="figure-h2" class="chart" style="height:300px;"></div>
+  <div id="figure-h3" class="chart" style="height:300px;"></div>
   <div id="group-h-table"></div>
 </section>
 <section id="group-v" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
@@ -501,6 +504,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-v3" class="chart" style="height:300px;"></div>
   <div id="figure-v4" class="chart" style="height:300px;"></div>
   <div id="figure-v5" class="chart" style="height:320px;"></div>
+  <div id="figure-v6" class="chart" style="height:280px;"></div>
+  <div id="figure-v7" class="chart" style="height:300px;"></div>
   <div id="group-v-table"></div>
 </section>
 <div id="week-selector-wrap" style="margin:16px 24px;"><label style="color:#8a8f98;font-size:12px;">Select week for detail: <select id="week-selector" style="padding:6px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"></select></label></div>

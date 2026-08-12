@@ -124,7 +124,11 @@ def main(argv=None):
             pth = proj.get("path")
             if pth and Path(pth).exists():
                 project_dirs.append(pth)
-    project_dirs = list(dict.fromkeys(project_dirs))
+    # Exclude the generator's own repo: its uncommitted count would include
+    # index.html written by this very build, making the output self-referential
+    # and breaking byte-identical rebuilds (SC-005).
+    out_resolved = out_dir.resolve()
+    project_dirs = [d for d in dict.fromkeys(project_dirs) if Path(d).resolve() != out_resolved]
     if project_dirs:
         try:
             git_state = collect_git_state(project_dirs)

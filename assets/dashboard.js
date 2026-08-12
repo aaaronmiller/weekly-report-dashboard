@@ -1202,3 +1202,69 @@
     tb.innerHTML = html;
   })();
 })();
+
+/* ── Round-2 additions: commonly-represented charts from existing data ─── */
+(function(){ // V6 cumulative market value line (data: subscription_value)
+  const sv = (window.__WEEKLY__ && window.__WEEKLY__.subscription_value) || null;
+  const c = document.getElementById('figure-v6');
+  if(!c || !sv || typeof echarts==='undefined') return;
+  const ms = sv.months||[]; let cum=0;
+  const cumData = ms.map(m=>{ cum+= (m.market_value||0); return +cum.toFixed(2); });
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'V6 · Cumulative market value of usage vs cumulative sub spend', textStyle:{color:'#f7f8f8'}},
+    tooltip:{trigger:'axis'}, legend:{data:['Cum market $','Cum spend $'], textStyle:{color:'#8a8f98'}},
+    xAxis:{type:'category', data:ms.map(m=>m.month), axisLabel:{color:'#8a8f98'}},
+    yAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, grid:{left:60,right:20,top:40,bottom:40},
+    series:[
+      {name:'Cum market $', type:'line', data:cumData, itemStyle:{color:'#4ecdc4'}, lineStyle:{color:'#4ecdc4',width:3}, symbol:'circle', areaStyle:{color:'rgba(78,205,196,0.15)'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+      {name:'Cum spend $', type:'line', data:ms.map((m,i)=>(i+1)*m.sub_cost), itemStyle:{color:'#8a8f98'}, lineStyle:{color:'#8a8f98'}, symbol:'diamond', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+    ]});
+})();
+(function(){ // H3 stacked sessions per harness per month (data: harness_stats.months)
+  const hs = (window.__WEEKLY__ && window.__WEEKLY__.harness_stats) || null;
+  const c = document.getElementById('figure-h3');
+  if(!c || !hs || typeof echarts==='undefined') return;
+  const ms = hs.months||[]; const months=[...new Set(ms.map(m=>m.month))].sort();
+  const harnesses=[...new Set(ms.map(m=>m.harness))];
+  const palette=['#7170ff','#4ecdc4','#ffb020','#ff7a7a','#a0e8af','#e879f9','#f9a8d4','#8a8f98'];
+  const series = harnesses.map((h,i)=>({name:h, type:'bar', stack:'s', data:months.map(mo=>(ms.find(x=>x.month===mo&&x.harness===h)||{}).sessions||0), itemStyle:{color:palette[i%8]}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}));
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'H3 · Sessions per harness per month (stacked)', textStyle:{color:'#f7f8f8'}},
+    tooltip:{trigger:'axis'}, legend:{data:harnesses, textStyle:{color:'#8a8f98'}},
+    xAxis:{type:'category', data:months, axisLabel:{color:'#8a8f98'}}, yAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+    grid:{left:50,right:20,top:40,bottom:40}, series});
+})();
+(function(){ // V7 per-plan stacked market value (data: months[].plans)
+  const sv = (window.__WEEKLY__ && window.__WEEKLY__.subscription_value) || null;
+  const c = document.getElementById('figure-v7');
+  if(!c || !sv || typeof echarts==='undefined') return;
+  const ms = sv.months||[]; const plans=Object.keys(sv.plans||{});
+  const palette=['#7170ff','#ffb020','#4ecdc4','#ff7a7a'];
+  const series = plans.map((p,i)=>({name:sv.plans[p].label, type:'bar', stack:'v', data:ms.map(m=>(m.plans&&m.plans[p])?m.plans[p].market_value:0), itemStyle:{color:palette[i%4]}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}));
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'V7 · Market value by subscription (stacked)', textStyle:{color:'#f7f8f8'}},
+    tooltip:{trigger:'axis'}, legend:{data:series.map(s=>s.name), textStyle:{color:'#8a8f98'}},
+    xAxis:{type:'category', data:ms.map(m=>m.month), axisLabel:{color:'#8a8f98'}}, yAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+    grid:{left:60,right:20,top:40,bottom:40}, series});
+})();
+(function(){ // C3 cache-read share donut (data: claude_stats.model_usage)
+  const cs = (window.__WEEKLY__ && window.__WEEKLY__.claude_stats) || null;
+  const c = document.getElementById('figure-c3');
+  if(!c || !cs || typeof echarts==='undefined') return;
+  const mu = cs.model_usage||[];
+  const top = mu.slice(0,6);
+  const data = top.map(m=>({name:m.model.slice(0,20), value:m.cache_read+m.input_tokens+m.output_tokens}));
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'C3 · Token share by model (input+output+cache)', textStyle:{color:'#f7f8f8'}, left:'center'},
+    tooltip:{trigger:'item'}, legend:{orient:'vertical', right:10, top:'middle', textStyle:{color:'#8a8f98'}},
+    series:[{type:'pie', radius:['35%','65%'], center:['40%','55%'], data, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{color:'#c2c7d0'}}]});
+})();
+(function(){ // O3 folder treemap (data: obsidian_stats.folders)
+  const os = (window.__WEEKLY__ && window.__WEEKLY__.obsidian_stats) || null;
+  const c = document.getElementById('figure-o3');
+  if(!c || !os || typeof echarts==='undefined') return;
+  const data = (os.folders||[]).map(f=>({name:f[0].slice(0,30), value:f[1]}));
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'O3 · Notes by folder', textStyle:{color:'#f7f8f8'}},
+    tooltip:{}, series:[{type:'treemap', data, roam:false, breadcrumb:{show:false}, label:{color:'#c2c7d0'}, emphasis:{focus:'series'}}]});
+})();
