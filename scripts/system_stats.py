@@ -101,7 +101,27 @@ def build_system_stats(problems: list[dict] | None = None) -> dict[str, Any]:
 
     # dpkg install count (all-time, last 2000 lines)
     dpkg = _sh(["bash", "-c", "grep -c ' install ' /var/log/dpkg.log 2>/dev/null || echo 0"]).strip()
+    # cronjobs log outcomes: parse ~/.local/state/cronjobs/logs/*.log per day
+    cron_logs: dict[str, dict[str, Any]] = {}
+    cron_dir = Path.home() / ".local/state/cronjobs/logs"
+    if cron_dir.exists():
+        for logf in sorted(cron_dir.glob("*.log")):
+            job = logf.stem
+            try:
+                lines = logf.read_text(errors="replace").splitlines()
+            except Exception:
+                continue
+            for line in lines[-400:]:
+                m2 = re.match(r"(\d{4}-\d{2}-\d{2})", line)
+                if m2:
+                    day = m2.group(1)
+                    slot = cron_logs.setdefault(day, {"day": day, "jobs": {}})
+                    slot["jobs"].setdefault(job, {"runs": 0, "last": "?"})
+                    slot["jobs"][job]["runs"] += 1
+                    slot["jobs"][job]["last"] = line.strip()[:80]
+
     return {
+        "cron_logs": [{"day": k, "jobs": v["jobs"]} for k, v in sorted(cron_logs.items())],
         "boot_time": boot_time,
         "kernel": kernel,
         "upgrades_by_month": [{"month": m, "packages": upgrades[m]} for m in sorted(upgrades)],

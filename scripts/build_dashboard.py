@@ -65,6 +65,14 @@ def main(argv=None):
     except Exception as e:
         primary_problems.append({"path": "projects_stats", "reason": f"projects stats failed: {e}"})
 
+    # claude code local usage stats (~/.claude/stats-cache.json)
+    claude_stats = {}
+    try:
+        from scripts.claude_stats import build_claude_stats
+        claude_stats = build_claude_stats(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "claude_stats", "reason": f"claude stats failed: {e}"})
+
     # system stats: cron, updates, uptime, shell history
     system_stats = {}
     try:
@@ -219,7 +227,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary

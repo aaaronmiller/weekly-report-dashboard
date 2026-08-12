@@ -1158,3 +1158,47 @@
     tb.innerHTML = html;
   })();
 })();
+
+/* ── C: Claude Code local usage cache ──────────────────────────────────── */
+(function(){
+  const cs = (window.__WEEKLY__ && window.__WEEKLY__.claude_stats) || null;
+  const gc = document.getElementById('group-c');
+  if(!gc || !cs) return;
+  const sum = document.getElementById('group-c-summary');
+  if(sum){
+    sum.textContent = `${cs.total_sessions} sessions · ${cs.total_messages} messages · ${cs.days.length} active days (cache computed ${cs.last_computed}). Tokens/day from the local usage cache, not cass.`;
+  }
+  const cc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  (function(){ // C1 daily activity: messages + tool calls
+    const c = cc('figure-c1'); if(!c) return;
+    const days = cs.days||[];
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'C1 · Claude Code daily activity (messages, tool calls)', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Messages','Tool calls'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:days.map(d=>d.date.slice(5)), axisLabel:{color:'#8a8f98', hideOverlap:true}},
+      yAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, grid:{left:50,right:20,top:40,bottom:40},
+      series:[
+        {name:'Messages', type:'bar', data:days.map(d=>d.messages), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Tool calls', type:'line', data:days.map(d=>d.tool_calls), itemStyle:{color:'#ffb020'}, lineStyle:{color:'#ffb020'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  (function(){ // C2 daily tokens
+    const c = cc('figure-c2'); if(!c) return;
+    const days = cs.days||[];
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'C2 · Claude Code tokens per day', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, xAxis:{type:'category', data:days.map(d=>d.date.slice(5)), axisLabel:{color:'#8a8f98', hideOverlap:true}},
+      yAxis:{type:'value', axisLabel:{color:'#8a8f98'}, name:'tokens'}, grid:{left:60,right:20,top:40,bottom:40},
+      series:[{type:'bar', data:days.map(d=>d.tokens_total), itemStyle:{color:'#4ecdc4'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}]});
+  })();
+  (function(){
+    const tb = document.getElementById('group-c-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Model','Input','Output','Cache read','Cache create','Cost'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+    for(const m of cs.model_usage||[]){
+      html += '<tr><td style="padding:6px;border-bottom:1px solid #222;">'+m.model.slice(0,30)+'</td><td>'+(m.input_tokens/1e6).toFixed(1)+'M</td><td>'+(m.output_tokens/1e6).toFixed(1)+'M</td><td>'+(m.cache_read/1e6).toFixed(1)+'M</td><td>'+(m.cache_creation/1e6).toFixed(1)+'M</td><td>$'+m.cost_usd+'</td></tr>';
+    }
+    html += '</tbody></table><div style="font-size:11px;color:#8a8f98;margin-top:8px;">'+(cs.notes||[]).join(' · ')+'</div>';
+    tb.innerHTML = html;
+  })();
+})();
