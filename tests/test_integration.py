@@ -54,4 +54,7 @@ def test_carry_age_fixture():
     candidates = [c for c in ledger if "week-over-week trend" in c.normalized_text]
     assert candidates, "trend item not found"
     max_age = max(c.carry_age for c in candidates)
-    assert max_age == 4, f"expected carry age 4, got {max_age}"
+    # Consecutive unchecked streak 2026-07-11..2026-08-07 = 5 appearances.
+    # Was 4 through 2026-08-01; advanced to 5 when the 08-07 week landed.
+    # The 08-07 report itself records "carry age 5 -- decide build or drop".
+    assert max_age == 5, f"expected carry age 5, got {max_age}"
