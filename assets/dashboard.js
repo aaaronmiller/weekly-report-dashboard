@@ -1069,3 +1069,92 @@
       emphasis:{focus:'series',blurScope:'coordinateSystem'},
       label:{show:true, position:'right', color:'#c2c7d0', formatter:p=>p.value>=0?'+'+Math.round(p.value)+'%':Math.round(p.value)+'%'}}]});
 })();
+
+/* ── B: Browser — Chrome history, domains, YouTube ─────────────────────── */
+(function(){
+  const bs = (window.__WEEKLY__ && window.__WEEKLY__.browser_stats) || null;
+  const gb = document.getElementById('group-b');
+  if(!gb || !bs) return;
+  const sum = document.getElementById('group-b-summary');
+  if(sum){
+    const top = (bs.top_domains||[]).slice(0,4).map(d=>`${d[0]} (${d[1]})`).join(', ');
+    sum.textContent = `${bs.total_visits||0} visits (${bs.months?bs.months.length:0} months) · Top: ${top}.`;
+  }
+  const bc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  (function(){ // B1 visits per month
+    const c = bc('figure-b1'); if(!c) return;
+    const ms = bs.months||[];
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'B1 · Browser visits per month', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, xAxis:{type:'category', data:ms.map(m=>m.month), axisLabel:{color:'#8a8f98'}},
+      yAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, grid:{left:50,right:20,top:40,bottom:40},
+      series:[{type:'bar', data:ms.map(m=>m.visits), itemStyle:{color:'#7170ff'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{show:true, position:'top', color:'#c2c7d0'}}]});
+  })();
+  (function(){ // B2 top domains
+    const c = bc('figure-b2'); if(!c) return;
+    const doms = (bs.top_domains||[]).slice(0,15);
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'B2 · Top domains by visits', textStyle:{color:'#f7f8f8'}},
+      tooltip:{}, xAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+      yAxis:{type:'category', data:doms.map(d=>d[0].slice(0,24)).reverse(), axisLabel:{color:'#8a8f98'}},
+      grid:{left:130,right:40,top:40,bottom:30},
+      series:[{type:'bar', data:doms.map(d=>d[1]).reverse(), itemStyle:{color:'#4ecdc4'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}, label:{show:true, position:'right', color:'#c2c7d0'}}]});
+  })();
+  (function(){
+    const tb = document.getElementById('group-b-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+      ['Domain','Visits'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+
+      '<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">Top YouTube (visits)</th></tr></thead><tbody>';
+    const doms = bs.top_domains||[]; const yt = bs.top_yt||[];
+    for(let i=0;i<Math.max(doms.length,8);i++){
+      const d = doms[i]||['',''];
+      const y = yt[i]||{};
+      html += '<tr><td style="padding:6px;border-bottom:1px solid #222;">'+d[0]+'</td><td>'+d[1]+'</td><td style="font-size:11px;color:#8a8f98;">'+(y.title?y.title.slice(0,60)+' ×'+y.visits:'')+'</td></tr>';
+    }
+    html += '</tbody></table><div style="font-size:11px;color:#8a8f98;margin-top:8px;">'+(bs.notes||[]).join(' · ')+'</div>';
+    tb.innerHTML = html;
+  })();
+})();
+
+/* ── S: System — updates, cron, uptime, shell history ──────────────────── */
+(function(){
+  const ss = (window.__WEEKLY__ && window.__WEEKLY__.system_stats) || null;
+  const gs = document.getElementById('group-s');
+  if(!gs || !ss) return;
+  const sum = document.getElementById('group-s-summary');
+  if(sum){
+    const up = (ss.upgrades_by_month||[]);
+    const last = up[up.length-1];
+    sum.textContent = `Boot ${ss.boot_time} · kernel ${ss.kernel} · ${(ss.cronjobs||[]).length} cronjobs · ${(ss.timers||[]).length} timers · ${ss.dpkg_installs_total||0} dpkg installs · ${last?last.month+': '+last.packages+' pkg upgrades':''}.`;
+  }
+  const sc = (id)=>{ const e=document.getElementById(id); return (e && typeof echarts!=='undefined') ? echarts.init(e,'dark') : null; };
+  (function(){ // S1 upgrades + shell commands per month
+    const c = sc('figure-s1'); if(!c) return;
+    const ups = ss.upgrades_by_month||[]; const sh = ss.shell_by_month||[];
+    const months = [...new Set([...ups.map(u=>u.month), ...sh.map(s=>s.month)])].sort();
+    const upMap = Object.fromEntries(ups.map(u=>[u.month,u.packages]));
+    const shMap = Object.fromEntries(sh.map(s=>[s.month,s.commands]));
+    c.setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+      title:{text:'S1 · Package upgrades and shell commands per month', textStyle:{color:'#f7f8f8'}},
+      tooltip:{trigger:'axis'}, legend:{data:['Packages upgraded','Shell commands'], textStyle:{color:'#8a8f98'}},
+      xAxis:{type:'category', data:months, axisLabel:{color:'#8a8f98'}},
+      yAxis:[{type:'value', axisLabel:{color:'#8a8f98'}},{type:'value', axisLabel:{color:'#8a8f98'}, splitLine:{show:false}}],
+      grid:{left:50,right:60,top:40,bottom:40},
+      series:[
+        {name:'Packages upgraded', type:'bar', data:months.map(m=>upMap[m]||0), itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}},
+        {name:'Shell commands', type:'line', yAxisIndex:1, data:months.map(m=>shMap[m]||null), connectNulls:false, itemStyle:{color:'#4ecdc4'}, lineStyle:{color:'#4ecdc4'}, symbol:'circle', emphasis:{focus:'series',blurScope:'coordinateSystem'}}
+      ]});
+  })();
+  (function(){
+    const tb = document.getElementById('group-s-table'); if(!tb) return;
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tbody>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;width:140px;">Boot time</td><td>'+ss.boot_time+'</td></tr>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;">Kernel</td><td>'+ss.kernel+'</td></tr>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;">dpkg installs (total)</td><td>'+ss.dpkg_installs_total+'</td></tr>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;">Cron jobs</td><td style="font-size:11px;color:#8a8f98;">'+(ss.cronjobs||[]).join(' | ')+'</td></tr>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;">Timers</td><td style="font-size:11px;color:#8a8f98;">'+(ss.timers||[]).slice(0,6).join(' | ')+'</td></tr>';
+    html += '<tr><td style="padding:4px;color:#8a8f98;">Thermal</td><td style="font-size:11px;color:#8a8f98;">'+((ss.thermal||[]).join(', ')||'(none — WSL)')+'</td></tr>';
+    html += '</tbody></table><div style="font-size:11px;color:#8a8f98;margin-top:8px;">'+(ss.notes||[]).join(' · ')+'</div>';
+    tb.innerHTML = html;
+  })();
+})();
