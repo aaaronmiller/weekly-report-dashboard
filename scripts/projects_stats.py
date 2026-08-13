@@ -116,6 +116,21 @@ def build_projects_stats(problems: list[dict] | None = None) -> dict[str, Any]:
         if g["total_commits"]:
             git_rows[repo.name] = g
 
+    # git-audit-sync report (newest JSON): repo health for the git tables
+    import glob as _glob
+    ga = None
+    audit_files = sorted(_glob.glob(str(Path.home() / "git-audit-logs" / "git-audit-*.json")), reverse=True)
+    if audit_files:
+        try:
+            import json as _json
+            ga = _json.loads(Path(audit_files[0]).read_text(encoding="utf-8"))
+        except Exception as e:
+            problems.append({"path": "git-audit-logs", "reason": f"parse failed: {e}"})
+    ga_repos = {}
+    if ga and isinstance(ga.get("repos"), list):
+        for r in ga["repos"]:
+            ga_repos[r.get("name")] = r
+
     # merge: project = workspace name or repo name
     project_names = sorted(set(list(ws.keys()) + list(git_rows.keys())))
     projects = []
@@ -136,6 +151,10 @@ def build_projects_stats(problems: list[dict] | None = None) -> dict[str, Any]:
             "files_by_month": g.get("files_by_month", {}),
             "top_models": sorted(w.get("models", {}).items(), key=lambda kv: -kv[1])[:4],
             "sessions_by_month": w.get("by_month", {}),
+            "git_state": (ga_repos.get(name) or {}).get("state"),
+            "git_uncommitted": (ga_repos.get(name) or {}).get("uncommitted"),
+            "git_ahead": (ga_repos.get(name) or {}).get("ahead"),
+            "git_behind": (ga_repos.get(name) or {}).get("behind"),
         })
     projects.sort(key=lambda p: -(p["sessions"] + p["commits"]))
 
@@ -163,7 +182,13 @@ def build_projects_stats(problems: list[dict] | None = None) -> dict[str, Any]:
             prior = sm.get(prev, 0) + cm.get(prev, 0)
             if prior > 0:
                 p["momentum"] = round((cur - prior) / prior, 2)
+    ga_out = None
+    if ga:
+        ga_out = {"timestamp": ga.get("timestamp"), "mode": ga.get("mode"),
+                  "health_pct": ga.get("health_pct"), "stats": ga.get("stats"),
+                  "repos_count": len(ga_repos)}
     return {"projects": projects, "months": month_out,
+            "git_audit": ga_out,
             "source": "cass workspaces + git log (code/)",
             "notes": ["Git scan bounded at 60s; repos beyond the cap are skipped and noted.",
                       "Sessions per project come from cass workspace attribution."]}

@@ -48,8 +48,14 @@ def _cronjobs() -> list[str]:
 
 
 def _timers() -> list[str]:
+    # strip the ticking LEFT column (would break SC-005): keep NEXT + UNIT + ACTIVATES
     raw = _sh(["systemctl", "list-timers", "--no-pager"])
-    return [l.strip() for l in raw.splitlines() if l.strip()][:12]
+    out = []
+    for l in raw.splitlines():
+        toks = l.split()
+        if len(toks) >= 6:
+            out.append(f"{toks[0]} {toks[1]} {toks[2]} -> {toks[-2]} ({toks[-1]})")
+    return out[:12]
 
 
 def _thermal() -> list[str]:

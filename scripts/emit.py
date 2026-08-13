@@ -485,6 +485,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="group-b-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
   <div id="figure-b1" class="chart" style="height:280px;"></div>
   <div id="figure-b2" class="chart" style="height:300px;"></div>
+  <div id="figure-b3" class="chart" style="height:260px;"></div>
   <div id="group-b-table"></div>
 </section>
 <section id="group-o" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
@@ -503,6 +504,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-p3" class="chart" style="height:300px;"></div>
   <div id="figure-p4" class="chart" style="height:300px;"></div>
   <div id="group-p-table"></div>
+  <div id="group-p-git"></div>
 </section>
 <section id="group-h" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
   <h2 style="margin:0 0 6px;">H: Harness Activity — one standardized schema per harness</h2>

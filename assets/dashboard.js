@@ -1365,3 +1365,51 @@
     xAxis:{type:'category', data:months, axisLabel:{color:'#8a8f98'}}, yAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
     grid:{left:50,right:20,top:40,bottom:40}, series});
 })();
+
+/* ── B3 browser hourly heatmap; P-table git state; muse row fix ────────── */
+(function(){ // B3 visits by hour of day (UTC)
+  const bs = (window.__WEEKLY__ && window.__WEEKLY__.browser_stats) || null;
+  const c = document.getElementById('figure-b3');
+  if(!c || !bs || typeof echarts==='undefined') return;
+  const hrs = bs.hours||[];
+  if(!hrs.length) return;
+  echarts.init(c,'dark').setOption({backgroundColor:'transparent', textStyle:{color:'#8a8f98'},
+    title:{text:'B3 · Browser activity by hour (UTC)', textStyle:{color:'#f7f8f8'}},
+    tooltip:{trigger:'axis'}, xAxis:{type:'category', data:hrs.map((_,i)=>i+'h'), axisLabel:{color:'#8a8f98', interval:2}},
+    yAxis:{type:'value', axisLabel:{color:'#8a8f98'}}, grid:{left:50,right:20,top:40,bottom:40},
+    series:[{type:'bar', data:hrs, itemStyle:{color:'#ffb020'}, emphasis:{focus:'series',blurScope:'coordinateSystem'}}]});
+})();
+(function(){ // P-table: append git-state columns via a second table
+  const ps = (window.__WEEKLY__ && window.__WEEKLY__.projects_stats) || null;
+  const tb = document.getElementById('group-p-git');
+  if(!tb || !ps) return;
+  const ga = ps.git_audit;
+  const rows = (ps.projects||[]).filter(p=>p.git_state);
+  let html = '<div style="margin-top:10px;font-size:12px;color:#c2c7d0;">Git audit ('+(ga?ga.timestamp+' · health '+ga.health_pct+'% · clean '+(ga.stats||{}).clean+', conflict '+(ga.stats||{}).conflict:'')+')</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr>'+
+    ['Repo','State','Uncommitted','Ahead','Behind'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+  for(const p of rows.slice(0,30)){
+    const dirty = (p.git_uncommitted||0)+(p.git_ahead||0)+(p.git_behind||0);
+    html += '<tr><td style="padding:6px;border-bottom:1px solid #222;">'+p.project.slice(0,28)+'</td><td>'+p.git_state+'</td><td>'+p.git_uncommitted+'</td><td>'+p.git_ahead+'</td><td>'+p.git_behind+'</td></tr>';
+  }
+  html += '</tbody></table>';
+  tb.innerHTML = html;
+})();
+(function(){ // muse row fix: rewrite the harness table so muse months render cleanly
+  const hs = (window.__WEEKLY__ && window.__WEEKLY__.harness_stats) || null;
+  const tb = document.getElementById('group-h-table');
+  if(!tb || !hs) return;
+  const rows = hs.harness||[];
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+    ['Harness','Sessions','Avg min','Tools','Tools/session','API calls','Tokens M','Top models','Top workspaces'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+  for(const h of rows){
+    html += '<tr><td style="padding:6px;border-bottom:1px solid #222;">'+h.harness+'</td><td>'+h.sessions+'</td><td>'+(h.avg_dur_min!=null?h.avg_dur_min:'—')+'</td><td>'+h.tool_calls+'</td><td>'+(h.tools_per_session!=null?h.tools_per_session:'—')+'</td><td>'+h.api_calls+'</td><td>'+h.tokens_M+'</td><td style="font-size:11px;color:#8a8f98;">'+(h.top_models||[]).map(x=>x[0].slice(0,16)+' ×'+x[1]).join(', ')+'</td><td style="font-size:11px;color:#8a8f98;">'+(h.top_workspaces||[]).map(x=>x[0].slice(0,12)+' ×'+x[1]).join(', ')+'</td></tr>';
+  }
+  if(hs.muse && hs.muse.months && hs.muse.months.length){
+    for(const m of hs.muse.months){
+      html += '<tr><td>muse ('+m.month+')</td><td>'+m.sessions+'</td><td>'+(m.avg_min!=null?m.avg_min:'—')+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="font-size:11px;color:#8a8f98;">direct read</td><td style="font-size:11px;color:#8a8f98;">session dirs</td></tr>';
+    }
+  }
+  html += '</tbody></table>';
+  tb.innerHTML = html;
+})();

@@ -72,6 +72,7 @@ def build_browser_stats(problems: list[dict] | None = None) -> dict[str, Any]:
     domains: dict[str, int] = {}
     yt: dict[str, int] = {}
     yt_titles: dict[str, str] = {}
+    hours = [0]*24
     for visit_us, url, title in rows:
         iso = _chrome_ts_to_iso(visit_us)
         if not iso:
@@ -80,6 +81,11 @@ def build_browser_stats(problems: list[dict] | None = None) -> dict[str, Any]:
         months[m] = months.get(m, 0) + 1
         d = _domain(url or "")
         domains[d] = domains.get(d, 0) + 1
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            hours[_dt.fromtimestamp(visit_us/1e6 - CHROME_EPOCH_OFFSET, tz=_tz.utc).hour] += 1
+        except Exception:
+            pass
         if "youtube.com/watch" in (url or "") or "youtu.be" in (url or ""):
             key = url or "?"
             yt[key] = yt.get(key, 0) + 1
@@ -97,6 +103,7 @@ def build_browser_stats(problems: list[dict] | None = None) -> dict[str, Any]:
         "months": month_out,
         "top_domains": top_domains,
         "top_yt": top_yt,
+        "hours": hours,
         "notes": ["History DB copied to temp before querying; original untouched.",
                   "YouTube rows = visits to watch URLs; titles from history titles."],
     }
