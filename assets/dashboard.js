@@ -1413,3 +1413,72 @@
   html += '</tbody></table>';
   tb.innerHTML = html;
 })();
+
+/* ══════════════════════════════════════════════════════════════════════
+   G: Git — repo health from nightly git-audit-sync (repo-health.json)
+   Data: window.__WEEKLY__.git_stats
+   ══════════════════════════════════════════════════════════════════════ */
+(function(){ // G summary + health donut + state bar + table
+  const gs = (window.__WEEKLY__ && window.__WEEKLY__.git_stats) || null;
+  const sec = document.getElementById('group-g');
+  if(!sec || !gs) return;
+
+  const sum = document.getElementById('group-g-summary');
+  const hp = gs.health_pct;
+  let html = 'Git audit · ' + (gs.total||0) + ' repos';
+  if (hp != null) html += ' · health <b style="color:' + (hp>=90?'#6ee7a0':hp>=70?'#ffb020':'#f87171') + ';">' + hp + '%</b>';
+  if (gs.generated_at) html += ' · generated ' + String(gs.generated_at).slice(0,10);
+  if (gs.dirty_count) html += ' · <span style="color:#f87171;">' + gs.dirty_count + ' need attention</span>';
+  html += ' · <span style="color:#8a8f98;font-size:11px;">source: ' + (gs.source||'') + '</span>';
+  sum.innerHTML = html;
+
+  // G1: health donut (health vs unhealthy)
+  const g1 = document.getElementById('figure-g1');
+  if (g1 && gs.total) {
+    const bad = gs.dirty_count||0;
+    const good = gs.total - bad;
+    echarts.init(g1).setOption({
+      title:{text:'Repo health', left:'center', textStyle:{color:'#f7f8f8',fontSize:13}},
+      tooltip:{trigger:'item'},
+      series:[{type:'pie', radius:['45%','70%'], center:['50%','55%'],
+        data:[
+          {value:good, name:'clean', itemStyle:{color:'#6ee7a0'}},
+          {value:bad, name:'dirty/conflicted', itemStyle:{color:'#f87171'}}
+        ],
+        label:{color:'#c2c7d0',fontSize:11}}]
+    });
+  }
+
+  // G2: state distribution bar
+  const g2 = document.getElementById('figure-g2');
+  if (g2 && gs.repos.length) {
+    const counts = {};
+    for (const r of gs.repos) counts[r.state] = (counts[r.state]||0) + 1;
+    const states = Object.keys(counts).sort();
+    echarts.init(g2).setOption({
+      title:{text:'Repos by state', left:'center', textStyle:{color:'#f7f8f8',fontSize:13}},
+      tooltip:{trigger:'axis'},
+      grid:{left:60,right:20,top:50,bottom:30},
+      xAxis:{type:'category', data:states, axisLabel:{color:'#c2c7d0'}},
+      yAxis:{type:'value', axisLabel:{color:'#8a8f98'}},
+      series:[{type:'bar', data:states.map(s=>counts[s]), itemStyle:{color:'#ffb020'}}]
+    });
+  }
+
+  // G table
+  const tb = document.getElementById('group-g-table');
+  if (!tb) return;
+  const rows = gs.repos||[];
+  let thtml = '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr>'+
+    ['Repo','State','Branch','Uncommitted','Ahead','Behind'].map(h=>'<th style="text-align:left;padding:6px;color:#8a8f98;border-bottom:1px solid #333;">'+h+'</th>').join('')+'</tr></thead><tbody>';
+  for (const r of rows.slice(0,100)) {
+    const st = r.state||'unknown';
+    const color = st==='clean' ? '#6ee7a0' : (st.indexOf('conflict')>=0 ? '#f87171' : '#ffb020');
+    const total = (r.uncommitted||0)+(r.ahead||0)+(r.behind||0);
+    thtml += '<tr style="'+(total?'background:rgba(248,113,113,0.05)':'')+'"><td style="padding:6px;border-bottom:1px solid #222;">'+String(r.name||'?').slice(0,34)+'</td>'+
+      '<td style="color:'+color+';">'+st+'</td><td>'+String(r.branch||'—').slice(0,20)+'</td>'+
+      '<td>'+r.uncommitted+'</td><td>'+r.ahead+'</td><td>'+r.behind+'</td></tr>';
+  }
+  thtml += '</tbody></table>';
+  tb.innerHTML = thtml;
+})();

@@ -157,7 +157,7 @@ def _curate_summary_for_week_legacy(w):
     except Exception:
         return {}
 
-def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None) -> str:
+def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None) -> str:
     """Produce window.__WEEKLY__ JSON string with sorted keys and fixed separators.
     alternatives may contain carry_over_exact, curate_legacy etc. for dropdown switching."""
     # canonical is tuple of (weeks, carry_over, project_activity)
@@ -303,6 +303,9 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     # claude code local usage stats
     if claude_stats:
         payload["claude_stats"] = claude_stats
+    # git audit sync output (nightly repo-sync check) as its own page
+    if git_stats:
+        payload["git_stats"] = git_stats
     # compute adaptive threshold value for tooltip
     try:
         from scripts.canonicalize import compute_dark_work_threshold_adaptive
@@ -315,13 +318,13 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
 
 
-def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None) -> Path:
+def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None) -> Path:
     """Write single index.html with CSS and payload inlined. Include header, canonical table, failure banner."""
     from scripts.emit import serialize_payload as sp
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     weeks, carry_over, project_activity = canonical
-    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats)
+    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats)
     # llm supplement payload (small JSON also inlined as separate window global for delineation)
     llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"))
 
@@ -379,6 +382,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
   <a href="#weekly-reports" style="color:#f7f8f8;">This Week</a>
   <a href="#group-p" style="color:#8a8f98;">Projects</a>
+  <a href="#group-g" style="color:#8a8f98;">Git</a>
   <a href="#group-h" style="color:#8a8f98;">Harnesses</a>
   <a href="#group-c" style="color:#8a8f98;">Claude</a>
   <a href="#group-v" style="color:#8a8f98;">Sub Value</a>
@@ -505,6 +509,13 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="figure-p4" class="chart" style="height:300px;"></div>
   <div id="group-p-table"></div>
   <div id="group-p-git"></div>
+</section>
+<section id="group-g" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
+  <h2 style="margin:0 0 6px;">G: Git — repo health from nightly audit (git-audit-sync)</h2>
+  <div id="group-g-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
+  <div id="figure-g1" class="chart" style="height:300px;"></div>
+  <div id="figure-g2" class="chart" style="height:280px;"></div>
+  <div id="group-g-table"></div>
 </section>
 <section id="group-h" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
   <h2 style="margin:0 0 6px;">H: Harness Activity — one standardized schema per harness</h2>

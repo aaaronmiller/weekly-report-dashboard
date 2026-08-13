@@ -113,6 +113,15 @@ def main(argv=None):
     except Exception as e:
         primary_problems.append({"path": "subscription_value", "reason": f"subscription value failed: {e}"})
 
+    # git audit sync output (nightly repo-sync check): repo health as its
+    # own page — parallel to project stats, not merged into them.
+    git_stats = {}
+    try:
+        from scripts.git_stats import build_git_stats
+        git_stats = build_git_stats(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "git_stats", "reason": f"git stats failed: {e}"})
+
     # problems to report — primary first, then legacy
     all_problems = primary_problems + report_problems + bundle_problems
 
@@ -231,7 +240,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary
