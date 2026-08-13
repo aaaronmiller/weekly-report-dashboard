@@ -36,7 +36,30 @@ def _dur_minutes(started_ms, ended_ms):
 
 def _muse_stats() -> dict[str, Any]:
     """Count muse session.jsonl files per month + estimate duration from model_completed events.
-    Muse is not in cass; read directly. Best-effort, bounded."""
+    Muse is not in cass; read directly. Cached by source mtimes: a live muse process
+    appends to session.jsonl continuously, which would shift sums between builds and
+    break SC-005 byte-identical rebuilds."""
+    import hashlib, tempfile, time
+    # In-flight sessions (mtime within last 15 min) are excluded: their files
+    # are being appended live, shifting sums between builds and breaking SC-005.
+    # They are not finished sessions anyway.
+    now = time.time()
+    files = sorted(f for f in MUSE_ROOT.glob("2026/*/*/*/session.jsonl")
+                   if now - f.stat().st_mtime > 900)
+    if not files:
+        return {"harness": "muse", "months": []}
+    try:
+        key = hashlib.sha256("".join(str(f.stat().st_mtime_ns) for f in files).encode()).hexdigest()[:16]
+    except Exception:
+        key = "?"
+    cache = Path(tempfile.gettempdir()) / "wr-dashboard" / f"muse-{key}.json"
+    cache.parent.mkdir(exist_ok=True)
+    if cache.exists():
+        try:
+            import json as _json
+            return _json.loads(cache.read_text(encoding="utf-8"))
+        except Exception:
+            pass
     months: dict[str, dict[str, Any]] = {}
     for f in MUSE_ROOT.glob("2026/*/*/*/session.jsonl"):
         month = f"{f.parent.parent.parent.parent.name}-{f.parent.parent.parent.name}"
@@ -65,7 +88,14 @@ def _muse_stats() -> dict[str, Any]:
             "total_min": round(sum(ds), 1) if ds else None,
             "tool_calls": s["tool_calls"],
         })
-    return {"harness": "muse", "months": out}
+    result = {"harness": "muse", "months": out}
+    if cache.parent.exists():
+        try:
+            import json as _json
+            cache.write_text(_json.dumps(result, default=str), encoding="utf-8")
+        except Exception:
+            pass
+    return result
 
 
 def build_harness_stats(problems: list[dict] | None = None) -> dict[str, Any]:

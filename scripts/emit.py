@@ -381,6 +381,10 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">⚙ Settings — schedule</a> | <span style="color:#8a8f98;font-size:12px;">Current: {config.get("schedule","daily")} </span></nav>
 <nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
   <a href="#weekly-reports" style="color:#f7f8f8;">This Week</a>
+  <span style="color:#555;">|</span>
+  <a href="file:///home/cheta/LIVING_DOCUMENTS/projects/model-orchestration/dashboard-integration.md" style="color:#8a8f98;" title="Living Documents — dashboard mapping">Docs</a>
+  <a href="file:///home/cheta/LIVING_DOCUMENTS/projects/model-orchestration/master.md" style="color:#8a8f98;" title="Living Documents — orchestration master">Master</a>
+  <a href="http://127.0.0.1:4173/projects/model-orchestration/" style="color:#8a8f98;" title="LD reader (when served)">LD reader</a>
   <a href="#group-p" style="color:#8a8f98;">Projects</a>
   <a href="#group-g" style="color:#8a8f98;">Git</a>
   <a href="#group-h" style="color:#8a8f98;">Harnesses</a>
