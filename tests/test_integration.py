@@ -1,13 +1,22 @@
 import pathlib, json, tempfile, shutil, subprocess
+
+# Every build subprocess is bounded. Without this a slow or hung build blocks
+# the whole suite indefinitely: on 2026-08-20 the build took 36.5s and
+# test_idempotence runs it twice, so the suite looked like a hang rather than
+# a slow test. The bound is deliberately well above the ~11s a healthy build
+# now takes, so it catches a hang without failing on ordinary variance.
+BUILD_TIMEOUT = 120
 from scripts.ingest import discover_reports, discover_bundles
 
 def test_idempotence(tmp_path):
     # run build twice and compare
     out = pathlib.Path("/tmp/test_idem_out")
     out.mkdir(exist_ok=True)
-    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], check=True)
+    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)],
+                   check=True, timeout=BUILD_TIMEOUT)
     a = (out / "index.html").read_bytes()
-    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], check=True)
+    subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)],
+                   check=True, timeout=BUILD_TIMEOUT)
     b = (out / "index.html").read_bytes()
     assert a == b
 
@@ -16,16 +25,34 @@ def test_malformed_bundle(tmp_path):
     bundles_dir = pathlib.Path("/home/cheta/code/weekly-report-dashboard")
     target = bundles_dir / "2026-07-11" / "weekly-metrics.json"
     backup = tmp_path / "bak.json"
-    backup.write_bytes(target.read_bytes())
+    original = target.read_bytes()
+
+    # Refuse to run against an already-corrupt source. This test mutates a real
+    # tracked corpus file and restores it in `finally`. On 2026-08-20 the
+    # corrupted content was found committed at HEAD, which means a run once
+    # died between the write and the restore, the damage was committed, and
+    # every later run then "backed up" the corruption and faithfully restored
+    # it. Validating first turns that silent, self-perpetuating data loss into
+    # an immediate failure.
+    import json as _json
+    try:
+        _json.loads(original)
+    except Exception as exc:
+        raise AssertionError(
+            f"{target} is already corrupt and must be repaired before this test "
+            f"runs, otherwise the corruption gets preserved: {exc}")
+    backup.write_bytes(original)
     try:
         target.write_text("{ broken")
-        result = subprocess.run(["python3", "scripts/build_dashboard.py", "--check"], capture_output=True, text=True)
+        result = subprocess.run(["python3", "scripts/build_dashboard.py", "--check"],
+                                capture_output=True, text=True, timeout=BUILD_TIMEOUT)
         assert result.returncode in (0,1)  # should not crash
         assert "2026-07-11" in result.stdout or "skipped" in result.stdout.lower()
         # remaining weeks still render: run full build to temp out
         out = tmp_path / "out"
         out.mkdir()
-        result2 = subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)], capture_output=True, text=True)
+        result2 = subprocess.run(["python3", "scripts/build_dashboard.py", "--out", str(out)],
+                                 capture_output=True, text=True, timeout=BUILD_TIMEOUT)
         assert result2.returncode in (0,1)
         assert (out / "index.html").exists()
         # check that file contains weeks

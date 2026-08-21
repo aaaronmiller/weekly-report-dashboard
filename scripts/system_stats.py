@@ -48,13 +48,31 @@ def _cronjobs() -> list[str]:
 
 
 def _timers() -> list[str]:
-    # strip the ticking LEFT column (would break SC-005): keep NEXT + UNIT + ACTIVATES
+    """Scheduled timers, with every volatile field removed.
+
+    SC-005 requires byte-identical output across consecutive builds. The
+    ticking LEFT column was already stripped for that reason, but the NEXT
+    column was kept and it moves too: it is an absolute wall-clock instant that
+    changes as timers fire and reschedule. Two builds seconds apart differed on
+
+        Thu 2026-08-20 20:27:06 -> systemd-tmpfiles-clean.timer
+        Thu 2026-08-20 20:27:05 -> systemd-tmpfiles-clean.timer
+
+    and minutes apart on man-db.timer, 04:09:22 against 09:05:59. That was the
+    only source of non-determinism in the whole build, and it had been masked
+    because a corrupt corpus file was suppressing the affected week.
+
+    Time-of-day is therefore dropped and only the day and date are kept. Which
+    timers exist and roughly when they next run is the stable, useful fact; the
+    exact second is not, and it is visible from `systemctl` anyway.
+    """
     raw = _sh(["systemctl", "list-timers", "--no-pager"])
     out = []
     for l in raw.splitlines():
         toks = l.split()
         if len(toks) >= 6:
-            out.append(f"{toks[0]} {toks[1]} {toks[2]} -> {toks[-2]} ({toks[-1]})")
+            # toks[0] day, toks[1] date, toks[2] time-of-day (dropped)
+            out.append(f"{toks[0]} {toks[1]} -> {toks[-2]} ({toks[-1]})")
     return out[:12]
 
 

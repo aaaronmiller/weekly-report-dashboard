@@ -373,26 +373,23 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <style>{css_text}</style>
 </head>
 <body>
-<script>window.__REPORTS_HTML__ = {reports_json};</script>
+<div class="dashboard-shell">
 <header>
 <h1>Weekly Report Dashboard</h1>
 <div id="header-stats">Weeks: {total} | Pairs: {with_pair} | Bundles: {with_bundle} | Both: {with_both}</div>
 <div id="generated-at">Generated: {generated_at.isoformat()}</div>
 <nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">⚙ Settings — schedule</a> | <span style="color:#8a8f98;font-size:12px;">Current: {config.get("schedule","daily")} </span></nav>
 <nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
-  <a href="#weekly-reports" style="color:#f7f8f8;">This Week</a>
-  <span style="color:#555;">|</span>
-  <a href="file:///home/cheta/LIVING_DOCUMENTS/projects/model-orchestration/dashboard-integration.md" style="color:#8a8f98;" title="Living Documents — dashboard mapping">Docs</a>
-  <a href="file:///home/cheta/LIVING_DOCUMENTS/projects/model-orchestration/master.md" style="color:#8a8f98;" title="Living Documents — orchestration master">Master</a>
-  <a href="http://127.0.0.1:4173/projects/model-orchestration/" style="color:#8a8f98;" title="LD reader (when served)">LD reader</a>
-  <a href="#group-p" style="color:#8a8f98;">Projects</a>
-  <a href="#group-g" style="color:#8a8f98;">Git</a>
-  <a href="#group-h" style="color:#8a8f98;">Harnesses</a>
-  <a href="#group-c" style="color:#8a8f98;">Claude</a>
-  <a href="#group-v" style="color:#8a8f98;">Sub Value</a>
-  <a href="#group-o" style="color:#8a8f98;">Obsidian</a>
-  <a href="#group-b" style="color:#8a8f98;">Browser</a>
-  <a href="#group-s" style="color:#8a8f98;">System</a>
+  <a href="#attention" style="color:#f7f8f8;">Attention</a>
+  <a href="#trends" style="color:#8a8f98;">Trends</a>
+  <a href="#carry-over" style="color:#8a8f98;">Carry-Over</a>
+  <a href="#panel-projects" style="color:#8a8f98;">Projects</a>
+  <a href="#panel-git" style="color:#8a8f98;">Git</a>
+  <a href="#panel-harness" style="color:#8a8f98;">Harnesses</a>
+  <a href="#panel-claude" style="color:#8a8f98;">Claude</a>
+  <a href="#panel-obsidian" style="color:#8a8f98;">Sources</a>
+  <a href="#weekly-reports" style="color:#8a8f98;">Reports</a>
+  <a href="#diagnostics" style="color:#8a8f98;">Diagnostics</a>
 </nav>
 <div id="algorithm-bar" style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">
   <label style="font-size:12px;color:#8a8f98;">Data source:
@@ -430,7 +427,50 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </div>
 </header>
 {failure_banner}
-{coverage_placeholder}
+<section id="attention">
+<div class="attention-grid">
+  <div class="attention-card severity-info" id="card-stalled">
+    <span class="card-icon">⏳</span>
+    <span class="card-label">Stalled items</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">computed from carry_over</span>
+  </div>
+  <div class="attention-card severity-info" id="card-dark">
+    <span class="card-icon">🌑</span>
+    <span class="card-label">Dark work weeks</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">computed</span>
+  </div>
+  <div class="attention-card severity-info" id="card-coverage">
+    <span class="card-icon">📊</span>
+    <span class="card-label">Data coverage</span>
+    <span class="card-value">{with_pair}/{total}</span>
+    <span class="card-detail">{with_bundle} bundles</span>
+  </div>
+  <div class="attention-card severity-info" id="card-neglected">
+    <span class="card-icon">🕸️</span>
+    <span class="card-label">Neglected projects</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">computed from project_activity</span>
+  </div>
+  <div class="attention-card severity-info" id="card-git">
+    <span class="card-icon">🐙</span>
+    <span class="card-label">Git health</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">computed from git_stats</span>
+  </div>
+  <div class="attention-card severity-info" id="card-freshness">
+    <span class="card-icon">⚡</span>
+    <span class="card-label">Data freshness</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">computed from timestamps</span>
+  </div>
+</div>
+</section>
+
+<div class="action-items" id="action-items"></div>
+
+<section id="canonical">
 <div id="canonical-table-wrap">
 <input id="table-search" placeholder="Search weeks..." />
 <table id="canonical-table">
@@ -438,111 +478,100 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <tbody>{table_rows}</tbody>
 </table>
 </div>
-<div id="overall-summary" style="margin:16px 24px;padding:14px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;"></div>
-<div id="figures">
-<div id="figure1" class="chart" style="height:400px;"></div>
-<div id="figure1-table"></div>
-<div id="figure2" class="chart" style="height:400px;"></div>
-<div id="figure3" class="chart" style="height:400px;"></div>
-<div id="figure4" class="chart" style="height:400px;"></div>
-</div>
-<!-- Grouped utility visualizations — 4 groups × 3-4 graphs -->
-<section id="group-a" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">A: Stalled Work & Delivery Risk</h2>
-  <div id="group-a-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-a1" class="chart" style="height:320px;"></div>
-  <div id="figure-a2" class="chart" style="height:320px;"></div>
-  <div id="figure-a3" class="chart" style="height:280px;"></div>
 </section>
-<section id="group-c" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">C: Claude Code — local usage cache (daily activity + tokens by model)</h2>
-  <div id="group-c-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-c1" class="chart" style="height:280px;"></div>
-  <div id="figure-c2" class="chart" style="height:280px;"></div>
-  <div id="figure-c3" class="chart" style="height:300px;"></div>
-  <div id="group-c-table"></div>
+
+<section id="trends">
+  <div id="figure1" class="chart chart-lazy" style="height:420px;"></div>
+  <div id="figure2" class="chart chart-lazy" style="height:380px;"></div>
+  <div id="figure1-table"></div>
+  <div style="display:flex;gap:16px;">
+    <div id="figure3" class="chart chart-lazy" style="height:360px;flex:1;"></div>
+    <div id="figure4" class="chart chart-lazy" style="height:360px;flex:1;"></div>
+  </div>
 </section>
-<section id="group-s" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">S: System — updates, cron, uptime, shell history</h2>
-  <div id="group-s-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-s1" class="chart" style="height:280px;"></div>
-  <div id="group-s-table"></div>
+
+<section id="carry-over">
+  <div class="ledger-tabs">
+    <button data-tab="open">Open</button>
+    <button data-tab="completed">Completed</button>
+    <button data-tab="project">By Project</button>
+  </div>
+  <input id="ledger-search" placeholder="Search items..." />
+  {ledger_placeholder}
+  {completions_placeholder}
 </section>
-<section id="group-b" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">B: Focus & Neglect · Easy Wins</h2>
-  <div id="group-b-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-b1" class="chart" style="height:380px;"></div>
-  <div id="figure-b2" class="chart" style="height:320px;"></div>
-  <div id="figure-b3" class="chart" style="height:260px;"></div>
-</section>
-<section id="group-c" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">C: Rhythm & Sustainability</h2>
-  <div id="group-c-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-c1" class="chart" style="height:360px;"></div>
-  <div id="figure-c3" class="chart" style="height:260px;"></div>
-</section>
-<section id="group-d" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">D: Narrative & Action</h2>
-  <div id="group-d-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-d2" style="min-height:120px;"></div>
-  <div id="figure-d3" style="min-height:100px;"></div>
-  <div id="viz-audit" style="margin-top:14px;padding:10px;background:rgba(113,112,255,0.08);border-radius:8px;font-size:11px;color:#8a8f98;"></div>
-</section>
-<section id="group-b" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">B: Browser — Chrome history, domains, YouTube</h2>
-  <div id="group-b-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-b1" class="chart" style="height:280px;"></div>
-  <div id="figure-b2" class="chart" style="height:300px;"></div>
-  <div id="figure-b3" class="chart" style="height:260px;"></div>
-  <div id="group-b-table"></div>
-</section>
-<section id="group-o" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">O: Obsidian Vault — notes, length, tags, frontmatter</h2>
-  <div id="group-o-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-o1" class="chart" style="height:280px;"></div>
-  <div id="figure-o2" class="chart" style="height:280px;"></div>
-  <div id="figure-o3" class="chart" style="height:280px;"></div>
-  <div id="group-o-table"></div>
-</section>
-<section id="group-p" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">P: Projects — what each project did</h2>
-  <div id="group-p-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-p1" class="chart" style="height:300px;"></div>
-  <div id="figure-p2" class="chart" style="height:300px;"></div>
-  <div id="figure-p3" class="chart" style="height:300px;"></div>
-  <div id="figure-p4" class="chart" style="height:300px;"></div>
-  <div id="group-p-table"></div>
-  <div id="group-p-git"></div>
-</section>
-<section id="group-g" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">G: Git — repo health from nightly audit (git-audit-sync)</h2>
-  <div id="group-g-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-g1" class="chart" style="height:300px;"></div>
-  <div id="figure-g2" class="chart" style="height:280px;"></div>
-  <div id="group-g-table"></div>
-</section>
-<section id="group-h" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">H: Harness Activity — one standardized schema per harness</h2>
-  <div id="group-h-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-h1" class="chart" style="height:300px;"></div>
-  <div id="figure-h2" class="chart" style="height:300px;"></div>
-  <div id="figure-h3" class="chart" style="height:300px;"></div>
-  <div id="figure-h4" class="chart" style="height:280px;"></div>
-  <div id="group-h-table"></div>
-</section>
-<section id="group-v" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 6px;">V: Subscription Value — what the plans buy over time</h2>
-  <div id="group-v-summary" style="font-size:12px;color:#8a8f98;margin-bottom:10px;"></div>
-  <div id="figure-v1" class="chart" style="height:340px;"></div>
-  <div id="figure-v2" class="chart" style="height:340px;"></div>
-  <div id="figure-v3" class="chart" style="height:300px;"></div>
-  <div id="figure-v4" class="chart" style="height:300px;"></div>
-  <div id="figure-v5" class="chart" style="height:320px;"></div>
-  <div id="figure-v6" class="chart" style="height:280px;"></div>
-  <div id="figure-v7" class="chart" style="height:300px;"></div>
-  <div id="group-v-table"></div>
-</section>
-<div id="week-selector-wrap" style="margin:16px 24px;"><label style="color:#8a8f98;font-size:12px;">Select week for detail: <select id="week-selector" style="padding:6px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"></select></label></div>
+
+<details class="data-panel" id="panel-projects">
+  <summary><span class="panel-title">Projects</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-p1" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-p2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="group-p-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-git">
+  <summary><span class="panel-title">Git Health</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-g1" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-g2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="group-g-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-harness">
+  <summary><span class="panel-title">Harness Activity</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-h1" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-h2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="group-h-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-claude">
+  <summary><span class="panel-title">Claude Code</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-cc1" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-cc2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="group-cc-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-obsidian">
+  <summary><span class="panel-title">Obsidian Vault</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-obs1" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-obs2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="group-obs-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-browser">
+  <summary><span class="panel-title">Browser</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-br1" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-br2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="group-br-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-system">
+  <summary><span class="panel-title">System</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-sys1" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="group-sys-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-subvalue">
+  <summary><span class="panel-title">Subscription Value</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <div class="panel-content">
+    <div id="figure-sv1" class="chart chart-lazy" style="height:340px;"></div>
+    <div id="figure-sv2" class="chart chart-lazy" style="height:340px;"></div>
+    <div id="group-sv-table"></div>
+  </div>
+</details>
+
 <section id="weekly-reports" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
   <h2 style="margin:0 0 8px;">This Week — read the reports, then the data below</h2>
   <div id="weekly-summary" style="font-size:13px;color:#c2c7d0;line-height:1.5;padding:10px 0;"></div>
@@ -564,12 +593,34 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
   <div id="reports-detail" style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;min-height:120px;"></div>
   <div style="margin-top:8px;font-size:11px;color:#8a8f98;">Perpetual: new reports appear Friday evening via cron <code>0 20 * * 5</code> → ready Saturday AM. Source: primary:cass (Feb-Aug 26w) + legacy bundles. Click a row to render full markdown (scrubbed, escaped) — read-only.</div>
 </section>
-{ledger_placeholder}
-{completions_placeholder}
-<div id="prose-panel">{prose_placeholder}</div>
+
+<section id="llm-supplement">
+  <div id="prose-panel">{prose_placeholder}</div>
+</section>
+
+<section id="diagnostics">
+  <div class="diagnostics-grid">
+    <div class="diag-card">
+      <h3>Assertions</h3>
+      <div id="assertions-summary"></div>
+    </div>
+    <div class="diag-card">
+      <h3>Coverage Breakdown</h3>
+      <div id="coverage-breakdown"></div>
+    </div>
+    <div class="diag-card">
+      <h3>Data Quality</h3>
+      <div id="data-quality-summary"></div>
+    </div>
+  </div>
+</section>
+
+</div>
+
 <script>{vendor_js}</script>
 <script>window.__WEEKLY__ = {payload_json};</script>
 <script>window.__LLM_SUPPLEMENT__ = {llm_json};</script>
+<script>window.__REPORTS_HTML__ = {reports_json};</script>
 <script>{js_text}</script>
 </body>
 </html>

@@ -89,7 +89,7 @@ def run_once(out_dir: Path, log_path: Path = DEFAULT_LOG):
     tmp = Path(tempfile.mkdtemp())
     try:
         # invoke build_dashboard
-        proc = subprocess.run([sys.executable, str(Path(__file__).parent / "build_dashboard.py"), "--out", str(tmp)], capture_output=True, text=True, timeout=30)
+        proc = subprocess.run([sys.executable, str(Path(__file__).parent / "build_dashboard.py"), "--out", str(tmp)], capture_output=True, text=True, timeout=120)
         duration = time.time() - start
         outcome = "success" if proc.returncode == 0 else "failed"
         # parse skipped weeks from stdout
