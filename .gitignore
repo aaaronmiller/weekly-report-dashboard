@@ -20,3 +20,4 @@ htmlcov/
 # Session-local agent state
 .agents/
 .gstack/
+staged-for-deletion/
