@@ -615,7 +615,9 @@
       sumEl.innerHTML = badge + ' <span style="font-size:11px;color:#8a8f98;">' + meta.label + '</span>';
     });
 
-    
+    renderDiagnostics();
+    initLazyCharts();
+
     window.addEventListener('resize', () => {
       if (typeof echarts !== 'undefined') {
         document.querySelectorAll('.chart, .chart-lazy').forEach(el => {
