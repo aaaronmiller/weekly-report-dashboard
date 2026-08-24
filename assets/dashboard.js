@@ -440,21 +440,37 @@
   const renderReportsBrowser = () => {
     const list = document.getElementById('reports-list');
     const detail = document.getElementById('reports-detail');
+    const weeklySummary = document.getElementById('weekly-summary');
     if (!list || !detail) return;
-    
+
+    // Populate weekly summary with latest week that has prose
+    if (weeklySummary) {
+      const latestWithProse = weeks.slice().reverse().find(w => w.prose_html);
+      if (latestWithProse) {
+        const theme = (latestWithProse.prose_html.match(/<p>Subject:([^<]+)/) || [])[1];
+        weeklySummary.innerHTML = '<strong>Latest: ' + latestWithProse.week_ending + '</strong>' +
+          (theme ? ' — ' + theme.trim() : '') +
+          ' <span style="color:#8a8f98;font-size:11px;">Click a week below to read the full report.</span>';
+      } else {
+        weeklySummary.textContent = 'No reports in corpus yet.';
+      }
+    }
+
     let html = '<table style="width:100%;border-collapse:collapse;"><tbody>';
     weeks.slice().reverse().forEach(w => {
-      html += `<tr data-week="${w.week_ending}" style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:var(--sp-2)">${w.week_ending}</td><td>${w.coverage}</td></tr>`;
+      const hasReport = !!w.prose_html;
+      const style = hasReport ? '' : 'color:#8a8f98;';
+      html += '<tr data-week="' + w.week_ending + '" style="cursor:' + (hasReport ? 'pointer' : 'default') + ';border-bottom:1px solid rgba(255,255,255,0.05);' + style + '"><td style="padding:var(--sp-2)">' + w.week_ending + '</td><td>' + w.coverage + '</td><td style="font-size:11px;color:#8a8f98;">' + (hasReport ? 'report' : 'no report') + '</td></tr>';
     });
     html += '</tbody></table>';
     list.innerHTML = html;
-    
+
     list.querySelectorAll('tr').forEach(tr => {
       tr.addEventListener('click', () => {
         const wk = tr.dataset.week;
         const rec = weeks.find(x => x.week_ending === wk);
-        if (rec) {
-          detail.innerHTML = `<h3>${wk}</h3><div>${rec.prose_html || 'No markdown report.'}</div>`;
+        if (rec && rec.prose_html) {
+          detail.innerHTML = '<h3>' + wk + '</h3><div>' + rec.prose_html + '</div>';
         }
       });
     });
@@ -494,37 +510,49 @@
       </div>
     `;
   };
-
-  // Section 12: Lazy loading setup
   const initLazyCharts = () => {
-    if (typeof IntersectionObserver === 'undefined') return;
+    if (typeof IntersectionObserver === 'undefined') {
+      // No observer support: show everything immediately.
+      document.querySelectorAll('.chart-lazy').forEach(c => c.classList.add('loaded'));
+      Object.keys(panelRenderers).forEach(pid => {
+        const panel = document.getElementById(pid);
+        if (panel && panelRenderers[pid]) { try { panelRenderers[pid](panel); } catch (e) {} }
+      });
+      return;
+    }
     const chartObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const el = entry.target;
-          if (!el._chartInit) {
-            el._chartInit = true;
-            if (el.id === 'figure1') renderFigure1(el);
-            else if (el.id === 'figure2') renderFigure2(el);
-            else {
-              const panelId = el.closest('details')?.id;
-              if (panelId && panelRenderers[panelId]) {
-                panelRenderers[panelId](el.closest('details'));
-              }
-            }
-            el.classList.add('loaded');
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        chartObserver.unobserve(el);
+        // Visibility first: a failed render must not leave the chart invisible.
+        el.classList.add('loaded');
+        if (el._chartInit) return;
+        el._chartInit = true;
+        try {
+          if (el.id === 'figure1') renderFigure1(el);
+          else if (el.id === 'figure2') renderFigure2(el);
+          else {
+            const panelId = el.closest('details')?.id;
+            if (panelId && panelRenderers[panelId]) panelRenderers[panelId](el.closest('details'));
           }
-          chartObserver.unobserve(el);
+        } catch (e) {
+          el.innerHTML = '<p style="color:#ff7a7a;font-size:12px;padding:12px;">chart failed: ' + escapeHTML(String(e.message || e)) + '</p>';
         }
       });
     }, { rootMargin: '200px' });
-    
+
     document.querySelectorAll('.chart-lazy').forEach(c => chartObserver.observe(c));
-    
+
     document.querySelectorAll('details.data-panel').forEach(panel => {
       panel.addEventListener('toggle', () => {
-        if (panel.open && panelRenderers[panel.id]) {
-          panelRenderers[panel.id](panel);
+        if (!panel.open) return;
+        panel.querySelectorAll('.chart-lazy').forEach(c => c.classList.add('loaded'));
+        if (panelRenderers[panel.id]) {
+          try { panelRenderers[panel.id](panel); } catch (e) {
+            const first = panel.querySelector('.chart-lazy');
+            if (first) first.innerHTML = '<p style="color:#ff7a7a;font-size:12px;padding:12px;">chart failed: ' + escapeHTML(String(e.message || e)) + '</p>';
+          }
         }
       });
     });
@@ -556,8 +584,37 @@
     initDropdowns();
     renderProse();
     renderReportsBrowser();
-    renderDiagnostics();
-    initLazyCharts();
+    // Populate panel summaries at init so users can see what's inside without opening
+    const panelMeta = {
+      'panel-projects': { label: 'Top projects by commits', dsKey: 'projects_stats' },
+      'panel-git': { label: 'Repo states and health', dsKey: 'git_stats' },
+      'panel-harness': { label: 'Sessions per harness', dsKey: 'harness_stats' },
+      'panel-claude': { label: 'Daily Claude activity', dsKey: 'claude_stats' },
+      'panel-obsidian': { label: 'Vault notes and tags', dsKey: 'obsidian_stats' },
+      'panel-browser': { label: 'Browsing and YouTube', dsKey: 'browser_stats' },
+      'panel-system': { label: 'Cron, upgrades, uptime', dsKey: 'system_stats' },
+      'panel-subvalue': { label: 'Plan value vs cost', dsKey: 'subscription_value' },
+    };
+    Object.entries(panelMeta).forEach(([pid, meta]) => {
+      const panel = document.getElementById(pid);
+      if (!panel) return;
+      const sumEl = panel.querySelector('.panel-summary');
+      if (!sumEl) return;
+      const ds = data[meta.dsKey];
+      const hasData = ds && Object.keys(ds).length > 0;
+      const genAt = data.generated_at;
+      let badge = '';
+      if (hasData && genAt) {
+        const diffDays = (new Date() - new Date(genAt)) / (1000 * 60 * 60 * 24);
+        const fClass = diffDays < 3 ? 'fresh' : diffDays < 7 ? 'stale' : 'old';
+        const text = diffDays < 1 ? 'Today' : Math.floor(diffDays) + 'd ago';
+        badge = '<span class="freshness-badge ' + fClass + '">' + text + '</span>';
+      } else {
+        badge = '<span class="freshness-badge unknown">no data</span>';
+      }
+      sumEl.innerHTML = badge + ' <span style="font-size:11px;color:#8a8f98;">' + meta.label + '</span>';
+    });
+
     
     window.addEventListener('resize', () => {
       if (typeof echarts !== 'undefined') {

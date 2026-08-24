@@ -43,11 +43,25 @@ def build_browser_stats(problems: list[dict] | None = None) -> dict[str, Any]:
 
     # Consistent snapshot via SQLite backup (Chrome writes the DB live); cache
     # keyed by source mtime so repeated builds are byte-identical (SC-005).
-    import hashlib
+    # TTL: reuse the freshest cached snapshot if it is younger than 10 minutes
+    # (SC-005a). Without this, two consecutive builds while Chrome is active
+    # capture different visit counts and break test_idempotence. The history DB
+    # drifts continuously as you browse; holding the snapshot for a short window
+    # trades at most 10 min of freshness for a deterministic build, which is the
+    # same trade the 2026-08-20 idempotence fix made for git-state jitter.
+    import hashlib, time
     cache_dir = Path(tempfile.gettempdir()) / "wr-dashboard"
     cache_dir.mkdir(exist_ok=True)
-    key = hashlib.sha256(str(CHROME_HISTORY.stat().st_mtime_ns).encode()).hexdigest()[:16]
-    tmp = cache_dir / f"history-{key}.db"
+    now = time.time()
+    try:
+        candidates = sorted(cache_dir.glob("history-*.db"), key=lambda p: p.stat().st_mtime, reverse=True)
+    except Exception:
+        candidates = []
+    if candidates and (now - candidates[0].stat().st_mtime) < 600:
+        tmp = candidates[0]
+    else:
+        key = hashlib.sha256(str(CHROME_HISTORY.stat().st_mtime_ns).encode()).hexdigest()[:16]
+        tmp = cache_dir / f"history-{key}.db"
     if not tmp.exists():
         try:
             src = sqlite3.connect(f"file:{CHROME_HISTORY}?mode=ro", uri=True)

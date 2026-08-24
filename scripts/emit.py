@@ -341,7 +341,9 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
         # scrub paths
         dad = scrub_paths(escape_html(w.dad_report_path or ""))
         personal = scrub_paths(escape_html(w.personal_report_path or ""))
-        table_rows += f'<tr><td>{w.week_ending.isoformat()}</td><td>{w.coverage}</td><td>{w.sessions if w.sessions is not None else "—"}</td><td>{w.commits if w.commits is not None else "—"}</td><td>{w.files_changed if w.files_changed is not None else "—"}</td><td>{w.projects_active if w.projects_active is not None else "—"}</td><td>{(f"{w.sessions_per_commit:.2f}" if w.sessions_per_commit is not None else "—")}</td><td>{"yes" if w.is_dark_work else "no"}</td><td>{w.data_quality}</td><td>{",".join(w.missing_fields) if w.missing_fields else "—"}</td></tr>\n'
+        missing_html = "—" if not w.missing_fields else f'<span style="color:#8a8f98;cursor:help;" title="{escape_html(", ".join(w.missing_fields))}">{len(w.missing_fields)} missing</span>'
+        dark_html = '<span style="color:#ffb020;">●</span>' if w.is_dark_work else '<span style="color:#4ecdc4;">○</span>'
+        table_rows += f'<tr class="{"dark-work-row" if w.is_dark_work else ""}"><td>{w.week_ending.isoformat()}</td><td>{w.coverage}</td><td>{w.sessions if w.sessions is not None else "—"}</td><td>{w.commits if w.commits is not None else "—"}</td><td>{w.files_changed if w.files_changed is not None else "—"}</td><td>{w.projects_active if w.projects_active is not None else "—"}</td><td>{(f"{w.sessions_per_commit:.2f}" if w.sessions_per_commit is not None else "—")}</td><td>{dark_html}</td><td>{w.data_quality}</td><td>{missing_html}</td></tr>\n'
 
     # ledger panel placeholder
     ledger_placeholder = '<div id="ledger"></div>'
@@ -375,52 +377,37 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <body>
 <div class="dashboard-shell">
 <header>
-<h1>Weekly Report Dashboard</h1>
-<div id="header-stats">Weeks: {total} | Pairs: {with_pair} | Bundles: {with_bundle} | Both: {with_both}</div>
-<div id="generated-at">Generated: {generated_at.isoformat()}</div>
-<nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">⚙ Settings — schedule</a> | <span style="color:#8a8f98;font-size:12px;">Current: {config.get("schedule","daily")} </span></nav>
+<div id="generated-at">Generated: {generated_at.strftime("%Y-%m-%d %H:%M UTC")} — schedule: {"Fri 8PM" if config.get("schedule","") == "0 20 * * 5" else config.get("schedule","daily")}</div>
+<nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">Settings</a></nav>
 <nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
   <a href="#attention" style="color:#f7f8f8;">Attention</a>
+  <a href="#canonical" style="color:#8a8f98;">All Weeks</a>
   <a href="#trends" style="color:#8a8f98;">Trends</a>
   <a href="#carry-over" style="color:#8a8f98;">Carry-Over</a>
   <a href="#panel-projects" style="color:#8a8f98;">Projects</a>
   <a href="#panel-git" style="color:#8a8f98;">Git</a>
   <a href="#panel-harness" style="color:#8a8f98;">Harnesses</a>
-  <a href="#panel-claude" style="color:#8a8f98;">Claude</a>
-  <a href="#panel-obsidian" style="color:#8a8f98;">Sources</a>
   <a href="#weekly-reports" style="color:#8a8f98;">Reports</a>
   <a href="#diagnostics" style="color:#8a8f98;">Diagnostics</a>
 </nav>
 <div id="algorithm-bar" style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">
   <label style="font-size:12px;color:#8a8f98;">Data source:
     <select id="algo-source" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="primary">Primary (better) — cass/raw-mirror all harnesses Feb-Aug · 26w</option>
-      <option value="legacy">Legacy (crutch) — weekly summaries only · 12w</option>
+      <option value="primary">Primary (all harnesses)</option>
+      <option value="legacy">Legacy (summaries only)</option>
     </select>
   </label>
   <label style="font-size:12px;color:#8a8f98;">Carry-over:
     <select id="algo-carry" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="fuzzy">Fuzzy (better) — token-Jaccard+difflib</option>
-      <option value="exact">Exact (legacy) — strict normalized</option>
+      <option value="fuzzy">Fuzzy match</option>
+      <option value="exact">Exact match</option>
     </select>
   </label>
   <label style="font-size:12px;color:#8a8f98;">Dark work:
     <select id="algo-dark" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="combined">Combined (better) — threshold OR adaptive</option>
-      <option value="threshold">Threshold (legacy) — spc ≥ 8</option>
-      <option value="adaptive">Adaptive — median+2*MAD</option>
-    </select>
-  </label>
-  <label style="font-size:12px;color:#8a8f98;">Curation:
-    <select id="algo-curate" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="weighted">Weighted (better) — scored rules</option>
-      <option value="legacy">Legacy — simple regex</option>
-    </select>
-  </label>
-  <label style="font-size:12px;color:#8a8f98;">Normalization:
-    <select id="algo-norm" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="improved">Improved (better) — multi-paren/unicode</option>
-      <option value="legacy">Legacy — single paren</option>
+      <option value="combined">Combined</option>
+      <option value="threshold">Threshold only</option>
+      <option value="adaptive">Adaptive</option>
     </select>
   </label>
   <span id="algo-info" style="font-size:11px;color:#8a8f98;margin-left:auto;"></span>
@@ -429,37 +416,37 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 {failure_banner}
 <section id="attention">
 <div class="attention-grid">
-  <div class="attention-card severity-info" id="card-stalled">
+  <div class="attention-card severity-info" id="attention-stalled">
     <span class="card-icon">⏳</span>
     <span class="card-label">Stalled items</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from carry_over</span>
   </div>
-  <div class="attention-card severity-info" id="card-dark">
+  <div class="attention-card severity-info" id="attention-darkwork">
     <span class="card-icon">🌑</span>
     <span class="card-label">Dark work weeks</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed</span>
   </div>
-  <div class="attention-card severity-info" id="card-coverage">
+  <div class="attention-card severity-info" id="attention-coverage">
     <span class="card-icon">📊</span>
     <span class="card-label">Data coverage</span>
     <span class="card-value">{with_pair}/{total}</span>
     <span class="card-detail">{with_bundle} bundles</span>
   </div>
-  <div class="attention-card severity-info" id="card-neglected">
+  <div class="attention-card severity-info" id="attention-neglected">
     <span class="card-icon">🕸️</span>
     <span class="card-label">Neglected projects</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from project_activity</span>
   </div>
-  <div class="attention-card severity-info" id="card-git">
+  <div class="attention-card severity-info" id="attention-git">
     <span class="card-icon">🐙</span>
     <span class="card-label">Git health</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from git_stats</span>
   </div>
-  <div class="attention-card severity-info" id="card-freshness">
+  <div class="attention-card severity-info" id="attention-freshness">
     <span class="card-icon">⚡</span>
     <span class="card-label">Data freshness</span>
     <span class="card-value">—</span>
@@ -471,6 +458,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <div class="action-items" id="action-items"></div>
 
 <section id="canonical">
+<h2 style="margin:0 0 4px;">All Weeks</h2>
+<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">One row per week-ending date. Every chart below derives from this table. ● = dark work (sessions without commits), ○ = normal. Hover a missing count for details.</p>
 <div id="canonical-table-wrap">
 <input id="table-search" placeholder="Search weeks..." />
 <table id="canonical-table">
@@ -481,6 +470,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </section>
 
 <section id="trends">
+<h2 style="margin:0 0 4px;">Trends</h2>
+<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">Sessions, commits, files, and projects over time. Lines connect observed weeks only; gaps mean no data, not zero.</p>
   <div id="figure1" class="chart chart-lazy" style="height:420px;"></div>
   <div id="figure2" class="chart chart-lazy" style="height:380px;"></div>
   <div id="figure1-table"></div>
@@ -488,9 +479,10 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
     <div id="figure3" class="chart chart-lazy" style="height:360px;flex:1;"></div>
     <div id="figure4" class="chart chart-lazy" style="height:360px;flex:1;"></div>
   </div>
-</section>
-
 <section id="carry-over">
+<h2 style="margin:0 0 4px;">Carry-Over Ledger</h2>
+<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">Items carried unchecked week to week. Sorted by carry age — oldest first. Stalled items need a complete-or-retire decision.</p>
+
   <div class="ledger-tabs">
     <button data-tab="open">Open</button>
     <button data-tab="completed">Completed</button>
