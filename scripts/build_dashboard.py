@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
@@ -113,14 +114,36 @@ def main(argv=None):
     except Exception as e:
         primary_problems.append({"path": "subscription_value", "reason": f"subscription value failed: {e}"})
 
-    # git audit sync output (nightly repo-sync check): repo health as its
-    # own page — parallel to project stats, not merged into them.
+    # git audit sync output (nightly repo-sync check): repo health as its own page
     git_stats = {}
     try:
         from scripts.git_stats import build_git_stats
         git_stats = build_git_stats(primary_problems)
     except Exception as e:
         primary_problems.append({"path": "git_stats", "reason": f"git stats failed: {e}"})
+
+    # M1 telemetry: provider x model x week consolidation (telemetry_audit.py).
+    telemetry = {}
+    telemetry_path = Path(__file__).parent.parent / "telemetry.json"
+    if telemetry_path.exists():
+        try:
+            telemetry = json.loads(telemetry_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            primary_problems.append({"path": "telemetry", "reason": f"telemetry.json unreadable: {e}"})
+    else:
+        primary_problems.append({"path": "telemetry", "reason": "telemetry.json missing; run scripts/telemetry_audit.py"})
+
+    # Living Documents tasks: aggregate across all projects (ld_tasks_audit.py).
+    ld_tasks = {}
+    ld_tasks_path = Path(__file__).parent.parent / "ld_tasks.json"
+    if ld_tasks_path.exists():
+        try:
+            ld_tasks = json.loads(ld_tasks_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            primary_problems.append({"path": "ld_tasks", "reason": f"ld_tasks.json unreadable: {e}"})
+    else:
+        primary_problems.append({"path": "ld_tasks", "reason": "ld_tasks.json missing; run scripts/ld_tasks_audit.py"})
+
 
     # problems to report — primary first, then legacy
     all_problems = primary_problems + report_problems + bundle_problems
@@ -240,7 +263,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary

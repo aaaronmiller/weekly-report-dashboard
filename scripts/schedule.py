@@ -118,16 +118,33 @@ def status(args):
     return 0
 
 def run_once(out_dir: Path, log_path: Path = DEFAULT_LOG):
-    """Run build to temp path and promote only on success; log outcome."""
+    """Run build to temp path and promote only on success; log outcome.
+
+    Scheduled pass is exactly one weekly run:
+    1) refresh telemetry (M1 consolidation from cass DB),
+    2) rebuild dashboard (which now embeds telemetry).
+    Both are read-only vs the weekly corpus — no report prose is generated here.
+    """
     import tempfile
     start = time.time()
     tmp = Path(tempfile.mkdtemp())
+    telemetry_ok = True
+    telemetry_msg = ""
+    try:
+        ta = subprocess.run([sys.executable, str(Path(__file__).parent / "telemetry_audit.py")],
+                            capture_output=True, text=True, timeout=60)
+        telemetry_msg = (ta.stdout.strip() + " " + ta.stderr.strip()).strip()
+        telemetry_ok = ta.returncode == 0
+        if not telemetry_ok:
+            telemetry_msg = "telemetry refresh failed: " + telemetry_msg
+    except Exception as e:
+        telemetry_ok = False
+        telemetry_msg = f"telemetry refresh failed: {e}"
     try:
         # invoke build_dashboard
         proc = subprocess.run([sys.executable, str(Path(__file__).parent / "build_dashboard.py"), "--out", str(tmp)], capture_output=True, text=True, timeout=120)
         duration = time.time() - start
         outcome = "success" if proc.returncode == 0 else "failed"
-        # parse skipped weeks from stdout
         skipped = []
         for line in proc.stdout.splitlines():
             if "Skipped" in line or "problems" in line.lower():
@@ -138,6 +155,8 @@ def run_once(out_dir: Path, log_path: Path = DEFAULT_LOG):
         log_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "outcome": outcome,
+            "telemetry_ok": telemetry_ok,
+            "telemetry_msg": telemetry_msg[:800],
             "duration": duration,
             "returncode": proc.returncode,
             "stdout": proc.stdout[:2000],

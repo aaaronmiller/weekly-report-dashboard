@@ -157,7 +157,7 @@ def _curate_summary_for_week_legacy(w):
     except Exception:
         return {}
 
-def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None) -> str:
+def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None) -> str:
     """Produce window.__WEEKLY__ JSON string with sorted keys and fixed separators.
     alternatives may contain carry_over_exact, curate_legacy etc. for dropdown switching."""
     # canonical is tuple of (weeks, carry_over, project_activity)
@@ -306,7 +306,12 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     # git audit sync output (nightly repo-sync check) as its own page
     if git_stats:
         payload["git_stats"] = git_stats
-    # compute adaptive threshold value for tooltip
+    # M1 telemetry: provider x model consolidation
+    if telemetry:
+        payload["telemetry"] = telemetry
+    # Living Documents tasks (all projects)
+    if ld_tasks:
+        payload["ld_tasks"] = ld_tasks
     try:
         from scripts.canonicalize import compute_dark_work_threshold_adaptive
         payload["dark_work_thresholds"] = {
@@ -318,13 +323,13 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
 
 
-def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None) -> Path:
+def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None) -> Path:
     """Write single index.html with CSS and payload inlined. Include header, canonical table, failure banner."""
     from scripts.emit import serialize_payload as sp
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     weeks, carry_over, project_activity = canonical
-    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats)
+    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks)
     # llm supplement payload (small JSON also inlined as separate window global for delineation)
     llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"))
 
@@ -376,45 +381,25 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </head>
 <body>
 <div class="dashboard-shell">
-<header>
-<div id="generated-at">Generated: {generated_at.strftime("%Y-%m-%d %H:%M UTC")} — schedule: {"Fri 8PM" if config.get("schedule","") == "0 20 * * 5" else config.get("schedule","daily")}</div>
-<nav style="margin-top:8px;"><a href="settings.html" style="color:#8a8f98;font-size:13px;text-decoration:underline;">Settings</a></nav>
-<nav id="topnav" style="position:sticky;top:0;z-index:50;background:rgba(8,9,10,0.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 24px;margin:10px -24px -10px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">
-  <a href="#attention" style="color:#f7f8f8;">Attention</a>
-  <a href="#canonical" style="color:#8a8f98;">All Weeks</a>
-  <a href="#trends" style="color:#8a8f98;">Trends</a>
-  <a href="#carry-over" style="color:#8a8f98;">Carry-Over</a>
-  <a href="#panel-projects" style="color:#8a8f98;">Projects</a>
-  <a href="#panel-git" style="color:#8a8f98;">Git</a>
-  <a href="#panel-harness" style="color:#8a8f98;">Harnesses</a>
-  <a href="#weekly-reports" style="color:#8a8f98;">Reports</a>
-  <a href="#diagnostics" style="color:#8a8f98;">Diagnostics</a>
-</nav>
-<div id="algorithm-bar" style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">
-  <label style="font-size:12px;color:#8a8f98;">Data source:
-    <select id="algo-source" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="primary">Primary (all harnesses)</option>
-      <option value="legacy">Legacy (summaries only)</option>
-    </select>
-  </label>
-  <label style="font-size:12px;color:#8a8f98;">Carry-over:
-    <select id="algo-carry" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="fuzzy">Fuzzy match</option>
-      <option value="exact">Exact match</option>
-    </select>
-  </label>
-  <label style="font-size:12px;color:#8a8f98;">Dark work:
-    <select id="algo-dark" style="margin-left:6px;padding:4px 8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="combined">Combined</option>
-      <option value="threshold">Threshold only</option>
-      <option value="adaptive">Adaptive</option>
-    </select>
-  </label>
-  <span id="algo-info" style="font-size:11px;color:#8a8f98;margin-left:auto;"></span>
+<header id="page-header">
+<div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
+  <h1 style="margin:0;font-size:22px;">Weekly Report Dashboard</h1>
+  <span style="font-size:12px;color:#8a8f98;">Generated {generated_at.strftime("%Y-%m-%d %H:%M UTC")} · refreshes Fri 8PM · {total} weeks · {with_pair} with reports · {with_bundle} with metric bundles</span>
+  <a href="settings.html" style="margin-left:auto;font-size:12px;color:#8a8f98;">Settings</a>
 </div>
+<nav id="topnav">
+  <a href="#attention">Attention</a>
+  <a href="#this-week">This Week</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#trends">Trends</a>
+  <a href="#carry-over">Carry-Over</a>
+  <a href="#data-sources">Data Sources</a>
+  <a href="#appendix">Appendix</a>
 </header>
 {failure_banner}
 <section id="attention">
+<h2>Attention</h2>
+<p class="section-sub">What needs action right now. Counts derive from the carry-over ledger, week records, and git state — nothing here is hand-entered. Items listed below the tiles are the specific things behind the numbers.</p>
 <div class="attention-grid">
   <div class="attention-card severity-info" id="attention-stalled">
     <span class="card-icon">⏳</span>
@@ -457,21 +442,21 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 
 <div class="action-items" id="action-items"></div>
 
-<section id="canonical">
-<h2 style="margin:0 0 4px;">All Weeks</h2>
-<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">One row per week-ending date. Every chart below derives from this table. ● = dark work (sessions without commits), ○ = normal. Hover a missing count for details.</p>
-<div id="canonical-table-wrap">
-<input id="table-search" placeholder="Search weeks..." />
-<table id="canonical-table">
-<thead><tr><th>Week</th><th>Coverage</th><th>Sessions</th><th>Commits</th><th>Files</th><th>Projects</th><th>Spc</th><th>Dark</th><th>Quality</th><th>Missing</th></tr></thead>
-<tbody>{table_rows}</tbody>
-</table>
-</div>
+<section id="this-week">
+<h2>This Week</h2>
+<p class="section-sub">The narrative behind the numbers: the latest weekly report, in full. The dashboard shows what happened; the report explains why it mattered. Pick any prior week to read its report.</p>
+  <div id="weekly-summary" style="font-size:13px;color:#c2c7d0;line-height:1.5;padding:4px 0 10px;"></div>
+  <div style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+    <button id="report-prev" class="btn">← prev</button>
+    <select id="report-week" class="btn"></select>
+    <button id="report-next" class="btn">next →</button>
+  </div>
+  <div id="report-viewer" style="column-count:2;column-gap:28px;font-size:13px;line-height:1.6;color:#d8dce2;"></div>
 </section>
 
 <section id="trends">
-<h2 style="margin:0 0 4px;">Trends</h2>
-<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">Sessions, commits, files, and projects over time. Lines connect observed weeks only; gaps mean no data, not zero.</p>
+<h2>Trends</h2>
+<p class="section-sub">Throughput over time from the canonical table. Lines connect every week that has data, jumping across gaps without inventing points — a missing week has no dot and shows "—" in the table. Figure 1 uses a log scale because session counts span three orders of magnitude.</p>
   <div id="figure1" class="chart chart-lazy" style="height:420px;"></div>
   <div id="figure2" class="chart chart-lazy" style="height:380px;"></div>
   <div id="figure1-table"></div>
@@ -479,118 +464,163 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
     <div id="figure3" class="chart chart-lazy" style="height:360px;flex:1;"></div>
     <div id="figure4" class="chart chart-lazy" style="height:360px;flex:1;"></div>
   </div>
-<section id="carry-over">
-<h2 style="margin:0 0 4px;">Carry-Over Ledger</h2>
-<p style="font-size:12px;color:#8a8f98;margin:0 0 12px;">Items carried unchecked week to week. Sorted by carry age — oldest first. Stalled items need a complete-or-retire decision.</p>
+<section id="tasks">
+<h2>Tasks</h2>
+<p class="section-sub">Open work from two sources: your weekly reports (carry-over items) and every Living Documents project's tasks page, aggregated. Each item shows a one-line summary — expand it for the full detail, or click "Open in Living Documents" to go to the page where you complete it.</p>
+<div id="tasks-source-tabs" class="ledger-tabs">
+  <button class="ledger-tab active" data-src="ld">Living Documents</button>
+  <button class="ledger-tab" data-src="reports">Weekly reports</button>
+</div>
+<input id="tasks-search" placeholder="Search tasks..." />
+<div id="tasks-summary" style="font-size:12px;color:#8a8f98;margin:6px 0 10px;"></div>
+<div id="tasks-list"></div>
+</section>
 
-  <div class="ledger-tabs">
-    <button data-tab="open">Open</button>
-    <button data-tab="completed">Completed</button>
-    <button data-tab="project">By Project</button>
-  </div>
+<section id="carry-over">
+<h2>Carry-Over Ledger</h2>
+<p class="section-sub">Commitments carried unchecked from one week's report to the next, matched by text. Sorted by carry age — the oldest first. An item at or past the stall threshold needs an explicit complete-or-retire decision; that is the point of this list.</p>
+
   <input id="ledger-search" placeholder="Search items..." />
   {ledger_placeholder}
   {completions_placeholder}
 </section>
 
-<details class="data-panel" id="panel-projects">
-  <summary><span class="panel-title">Projects</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+<section id="data-sources">
+<h2>Data Sources</h2>
+<p class="section-sub">What the machine was doing, from primary logs — not from the reports. Each panel is one source. Model Telemetry answers which model/provider combination does the work, at what cost, and how often it fails. Open a panel to see its charts.</p>
+<details class="data-panel" id="panel-telemetry">
+  <summary><span class="panel-title">Model Telemetry</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-p1" class="chart chart-lazy" style="height:300px;"></div>
-    <div id="figure-p2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-m1a" class="chart chart-lazy" style="height:400px;"></div>
+    <div id="figure-m1b" class="chart chart-lazy" style="height:400px;"></div>
+    <div id="group-m1-table"></div>
+  </div>
+</details>
+
+<details class="data-panel" id="panel-projects">
+  <summary><span class="panel-title">Projects</span><span class="panel-summary"></span></summary>
+  <div class="panel-content">
+    <div id="figure-p1" class="chart chart-lazy" style="height:360px;"></div>
+    <div id="figure-p2" class="chart chart-lazy" style="height:360px;"></div>
     <div id="group-p-table"></div>
   </div>
 </details>
 
-<details class="data-panel" id="panel-git">
-  <summary><span class="panel-title">Git Health</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+<details class="data-panel" id="panel-value">
+  <summary><span class="panel-title">Value Extracted — subscriptions &amp; projects</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-g1" class="chart chart-lazy" style="height:300px;"></div>
-    <div id="figure-g2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-v1" class="chart chart-lazy" style="height:340px;"></div>
+    <div id="figure-v2" class="chart chart-lazy" style="height:400px;"></div>
+    <div id="figure-v3" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="group-v-table"></div>
+  </div>
+</details>
+<details class="data-panel" id="panel-git">
+  <summary><span class="panel-title">Git Health</span><span class="panel-summary"></span></summary>
+  <div class="panel-content">
+    <div id="figure-g1" class="chart chart-lazy" style="height:360px;"></div>
+    <div id="figure-g2" class="chart chart-lazy" style="height:320px;"></div>
     <div id="group-g-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-harness">
-  <summary><span class="panel-title">Harness Activity</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">Harness Activity</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-h1" class="chart chart-lazy" style="height:300px;"></div>
-    <div id="figure-h2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-h1" class="chart chart-lazy" style="height:360px;"></div>
+    <div id="figure-h2" class="chart chart-lazy" style="height:360px;"></div>
     <div id="group-h-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-claude">
-  <summary><span class="panel-title">Claude Code</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">Claude Code</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-cc1" class="chart chart-lazy" style="height:280px;"></div>
-    <div id="figure-cc2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-cc1" class="chart chart-lazy" style="height:320px;"></div>
+    <div id="figure-cc2" class="chart chart-lazy" style="height:320px;"></div>
     <div id="group-cc-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-obsidian">
-  <summary><span class="panel-title">Obsidian Vault</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">Obsidian Vault</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-obs1" class="chart chart-lazy" style="height:280px;"></div>
-    <div id="figure-obs2" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-obs1" class="chart chart-lazy" style="height:320px;"></div>
+    <div id="figure-obs2" class="chart chart-lazy" style="height:320px;"></div>
     <div id="group-obs-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-browser">
-  <summary><span class="panel-title">Browser</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">Browser</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-br1" class="chart chart-lazy" style="height:280px;"></div>
-    <div id="figure-br2" class="chart chart-lazy" style="height:300px;"></div>
+    <div id="figure-br1" class="chart chart-lazy" style="height:320px;"></div>
+    <div id="figure-br2" class="chart chart-lazy" style="height:340px;"></div>
     <div id="group-br-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-system">
-  <summary><span class="panel-title">System</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">System</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-sys1" class="chart chart-lazy" style="height:280px;"></div>
+    <div id="figure-sys1" class="chart chart-lazy" style="height:320px;"></div>
     <div id="group-sys-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-subvalue">
-  <summary><span class="panel-title">Subscription Value</span><span class="panel-summary"></span><span class="freshness-badge"></span></summary>
+  <summary><span class="panel-title">Subscription Value</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-sv1" class="chart chart-lazy" style="height:340px;"></div>
-    <div id="figure-sv2" class="chart chart-lazy" style="height:340px;"></div>
+    <div id="figure-sv1" class="chart chart-lazy" style="height:360px;"></div>
+    <div id="figure-sv2" class="chart chart-lazy" style="height:360px;"></div>
     <div id="group-sv-table"></div>
   </div>
 </details>
-
-<section id="weekly-reports" style="margin:24px;background:#14181b;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;">
-  <h2 style="margin:0 0 8px;">This Week — read the reports, then the data below</h2>
-  <div id="weekly-summary" style="font-size:13px;color:#c2c7d0;line-height:1.5;padding:10px 0;"></div>
-  <div style="display:flex;gap:8px;align-items:center;margin:10px 0;">
-    <button id="report-prev" style="padding:6px 12px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;cursor:pointer;">← prev</button>
-    <select id="report-week" style="padding:6px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"></select>
-    <button id="report-next" style="padding:6px 12px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;cursor:pointer;">next →</button>
-  </div>
-  <div id="report-viewer" style="column-count:2;column-gap:28px;font-size:13px;line-height:1.6;color:#d8dce2;"></div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-    <input id="reports-search" placeholder="Search reports..." style="flex:1;min-width:200px;padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"/>
-    <select id="reports-filter" style="padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
-      <option value="all">All reports</option>
-      <option value="pair">With pair</option>
-      <option value="primary">Primary-only</option>
-    </select>
-  </div>
-  <div id="reports-list" style="max-height:420px;overflow:auto;border:1px solid rgba(255,255,255,0.06);border-radius:8px;"></div>
-  <div id="reports-detail" style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;min-height:120px;"></div>
-  <div style="margin-top:8px;font-size:11px;color:#8a8f98;">Perpetual: new reports appear Friday evening via cron <code>0 20 * * 5</code> → ready Saturday AM. Source: primary:cass (Feb-Aug 26w) + legacy bundles. Click a row to render full markdown (scrubbed, escaped) — read-only.</div>
 </section>
 
-<section id="llm-supplement">
-  <div id="prose-panel">{prose_placeholder}</div>
-</section>
+<section id="appendix">
+<h2>Appendix</h2>
+<p class="section-sub">Reference material: the full canonical table every chart derives from, the complete report archive, and the page's own validation state. Nothing here is needed for the weekly read — it is here so every number on the page can be traced.</p>
+<details class="data-panel" id="panel-canonical">
+  <summary><span class="panel-title">All Weeks (canonical table)</span><span class="panel-summary">One row per week — every chart above derives from this table. Click a row to read that week's report.</span></summary>
+  <div class="panel-content">
+  <p style="font-size:12px;color:#8a8f98;margin:0 0 10px;line-height:1.6;">
+    <strong>How to read this:</strong>
+    <span title="Sessions counted from raw harness logs (cass). Available for all 39 weeks."><u>Sessions</u></span> = work sessions logged that week ·
+    <span title="Commits, files changed, active projects — only exist for weeks that have a metrics bundle (8 of 39)."><u>Commits/Files/Projects</u></span> = git activity, only where a bundle exists ·
+    <span title="Sessions per commit. High = lots of work with little git activity (dark work)."><u>SPC</u></span> = sessions per commit ·
+    <span title="● dark work = a week where session count is high relative to commits — work git can't see."><u>●</u></span> = dark-work week ·
+    <span title="Coverage tells you which sources exist for that week: 'primary' = session logs only; 'pair' = a written report; 'bundle' = a metrics file. Most weeks are primary-only, which is why Commits shows —."><u>Coverage</u></span> = which sources exist ·
+    <span title="'N missing' lists which fields had no data. Hover to see which."><u>Missing</u></span> = fields with no data (hover for the list).
+  </p>
+  <div id="canonical-table-wrap" style="max-height:420px;overflow-y:auto;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:0 8px;">
+  <input id="table-search" placeholder="Search weeks..." style="position:sticky;top:0;z-index:3;" />
+  <table id="canonical-table">
+  <thead><tr><th>Week</th><th>Coverage</th><th>Sessions</th><th>Commits</th><th>Files</th><th>Projects</th><th>Spc</th><th>Dark</th><th>Quality</th><th>Missing</th></tr></thead>
+  <tbody>{table_rows}</tbody>
+  </table>
+  </div>
+  </div>
+</details>
+<details class="data-panel" id="panel-reports-archive">
+  <summary><span class="panel-title">Report Archive</span><span class="panel-summary">Every weekly report, searchable — read-only</span></summary>
+  <div class="panel-content">
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <input id="reports-search" placeholder="Search reports..." style="flex:1;min-width:200px;padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;"/>
+      <select id="reports-filter" style="padding:8px;background:#08090a;color:#f7f8f8;border:1px solid #333;border-radius:6px;">
+        <option value="all">All reports</option>
+        <option value="pair">With pair</option>
+        <option value="primary">Primary-only</option>
+      </select>
+    </div>
+    <div id="reports-list" style="max-height:420px;overflow:auto;border:1px solid rgba(255,255,255,0.06);border-radius:8px;"></div>
+    <div id="reports-detail" style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;min-height:120px;"></div>
+  </div>
+</details>
 
 <section id="diagnostics">
+<h2>Page Health</h2>
+<p class="section-sub">The dashboard validates its own invariants on every build. If a count looks wrong, check here first — a failed assertion means a data problem, not a rendering one.</p>
   <div class="diagnostics-grid">
     <div class="diag-card">
       <h3>Assertions</h3>

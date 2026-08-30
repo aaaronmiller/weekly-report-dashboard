@@ -17,13 +17,15 @@
     return sel ? sel.value : (weeks.length ? weeks[weeks.length-1].week_ending : null);
   };
   const baseChartOption = (title) => ({
-    title: { text: title, textStyle: { color: '#f7f8f8', fontSize: 13, fontWeight: 'normal' } },
+    title: { text: title, textStyle: { color: '#f7f8f8', fontSize: 13, fontWeight: 'normal' }, left: 4, top: 2 },
     backgroundColor: 'transparent',
     textStyle: { color: '#8a8f98' },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', axisLabel: { color: '#8a8f98' } },
+    xAxis: { type: 'category', axisLabel: { color: '#8a8f98', hideOverlap: true } },
     yAxis: { type: 'value', axisLabel: { color: '#8a8f98' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-    grid: { left: 50, right: 20, top: 40, bottom: 30 }
+    // containLabel makes the grid shrink to fit axis labels instead of clipping
+    // them — fixes truncated project/model names on horizontal bar charts.
+    grid: { left: 8, right: 16, top: 34, bottom: 6, containLabel: true }
   });
 
   // Section 2: Attention Panel
@@ -166,15 +168,15 @@
   // Section 5: Core figures 1-4
   const renderFigure1 = (el) => {
     if (!el || typeof echarts === 'undefined') return;
-    const option = baseChartOption('Figure 1 — Throughput Trend');
+    const option = baseChartOption('Figure 1 — Throughput Trend (log scale)');
     option.legend = { data: ['Sessions','Commits','Files','Projects'], textStyle: { color: '#8a8f98' } };
     option.xAxis.data = labels;
-    option.yAxis = { type: 'log', logBase: 10, name: 'log scale', axisLabel: { color: '#8a8f98' } };
+    option.yAxis = { type: 'log', logBase: 10, axisLabel: { color: '#8a8f98' } };
     option.series = [
-      {name: 'Sessions', type: 'line', data: weeks.map(w => w.sessions), itemStyle: { color: '#7170ff' }},
-      {name: 'Commits', type: 'line', data: weeks.map(w => w.commits), itemStyle: { color: '#ff7a7a' }},
-      {name: 'Files', type: 'line', data: weeks.map(w => w.files_changed), itemStyle: { color: '#4ecdc4' }},
-      {name: 'Projects', type: 'line', data: weeks.map(w => w.projects_active), itemStyle: { color: '#ffb020' }}
+      {name: 'Sessions', type: 'line', connectNulls: true, data: weeks.map(w => w.sessions), itemStyle: { color: '#7170ff' }},
+      {name: 'Commits', type: 'line', connectNulls: true, data: weeks.map(w => w.commits), itemStyle: { color: '#ff7a7a' }},
+      {name: 'Files', type: 'line', connectNulls: true, data: weeks.map(w => w.files_changed), itemStyle: { color: '#4ecdc4' }},
+      {name: 'Projects', type: 'line', connectNulls: true, data: weeks.map(w => w.projects_active), itemStyle: { color: '#ffb020' }}
     ];
     const chart = echarts.getInstanceByDom(el) || echarts.init(el, 'dark');
     chart.setOption(option);
@@ -183,12 +185,11 @@
 
   const renderFigure2 = (el) => {
     if (!el || typeof echarts === 'undefined') return;
-    const option = baseChartOption('Figure 2 — Dark Work (SPC)');
+    const option = baseChartOption('Figure 2 — Dark Work: sessions per commit (higher = less visible to git)');
     option.xAxis.data = labels;
-    option.yAxis.name = 'sessions / commit';
     const threshold = data.config?.dark_work_threshold || 8.0;
     option.series = [{
-      name: 'SPC', type: 'line', data: weeks.map(w => w.sessions_per_commit),
+      name: 'SPC', type: 'line', connectNulls: true, data: weeks.map(w => w.sessions_per_commit),
       itemStyle: { color: '#ffb020' },
       markLine: { data: [{ yAxis: threshold, name: 'threshold' }], lineStyle: { color: '#ff4d4d' } }
     }];
@@ -389,7 +390,7 @@
       if (c && typeof echarts !== 'undefined') {
         const opt = baseChartOption('Obsidian Notes per Month');
         opt.xAxis.data = ds.months.map(m => m.month);
-        opt.series = [{ type: 'line', data: ds.months.map(m => m.docs), itemStyle: { color: '#a0e8af' } }];
+        opt.series = [{ type: 'line', connectNulls: true, data: ds.months.map(m => m.docs), itemStyle: { color: '#a0e8af' } }];
         echarts.init(c, 'dark').setOption(opt);
       }
     },
@@ -419,6 +420,112 @@
         echarts.init(c, 'dark').setOption(opt);
       }
     },
+    'panel-telemetry': (el) => {
+      const ds = data.telemetry;
+      if (!ds || !ds.top_models) return;
+      renderPanelFreshness(el, ds.generated_at);
+      if (typeof echarts === 'undefined') return;
+      const HARNESS_COLORS = { claude_code: '#7170ff', hermes: '#4ecdc4', qwen: '#ffb020', codex: '#ff7a7a', gemini: '#a0e8af', pi_agent: '#8a8f98', opencode: '#e0aaff', antigravity: '#f4a261' };
+      const top = ds.top_models.filter(m => m.model !== 'unknown' || m.tool_calls > 500).slice(0, 12).reverse();
+      // M1a: tool-call volume by model, colored by harness
+      const c1 = document.getElementById('figure-m1a');
+      if (c1) {
+        const opt1 = baseChartOption('Tool calls by model/provider (top combos) — bar color = harness');
+        opt1.grid = { left: 8, right: 60, top: 34, bottom: 6, containLabel: true };
+        opt1.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt1.yAxis = { type: 'category', data: top.map(m => m.model.length > 34 ? m.model.slice(0, 33) + '…' : m.model), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
+        opt1.tooltip = { trigger: 'item', formatter: (p) => {
+          const m = top[p.dataIndex];
+          const fr = m.failure_rate != null ? Math.round(m.failure_rate * 100) + '% failed' : 'failure rate n/a';
+          return '<strong>' + escapeHTML(m.harness) + ' / ' + escapeHTML(m.model) + '</strong><br/>' +
+            'Tool calls: ' + m.tool_calls + '<br/>Conversations: ' + m.conversations + '<br/>' + fr +
+            '<br/>Est. cost: $' + (m.est_cost_usd || 0).toFixed(2) +
+            (m.median_duration_s != null ? '<br/>Median session: ' + (m.median_duration_s > 3600 ? (m.median_duration_s/3600).toFixed(1) + 'h' : Math.round(m.median_duration_s) + 's') : '');
+        } };
+        opt1.series = [{ type: 'bar', data: top.map(m => ({ value: m.tool_calls, itemStyle: { color: HARNESS_COLORS[m.harness] || '#8a8f98' } })) }];
+        echarts.init(c1, 'dark').setOption(opt1);
+      }
+      // M1b: cost vs volume — the value question
+      const c2 = document.getElementById('figure-m1b');
+      if (c2) {
+        const pts = ds.top_models.filter(m => m.est_cost_usd > 0.01).map(m => ({
+          name: m.harness + ' / ' + m.model,
+          value: [m.tool_calls, Math.max(m.est_cost_usd, 0.02), m.conversations],
+          harness: m.harness,
+        }));
+        const opt2 = baseChartOption('Cost vs tool volume (lower-right = best value; bubble = conversations)');
+        opt2.grid = { left: 8, right: 24, top: 34, bottom: 6, containLabel: true };
+        opt2.tooltip = { trigger: 'item', formatter: (p) => '<strong>' + escapeHTML(p.name) + '</strong><br/>Tool calls: ' + p.value[0] + '<br/>Est. cost: $' + p.value[1].toFixed(2) + '<br/>Conversations: ' + p.value[2] };
+        opt2.xAxis = { type: 'value', name: 'tool calls', nameLocation: 'middle', nameGap: 24, axisLabel: { color: '#8a8f98' }, nameTextStyle: { color: '#8a8f98' } };
+        opt2.yAxis = { type: 'value', name: 'est. cost $', nameLocation: 'middle', nameGap: 36, axisLabel: { color: '#8a8f98' }, nameTextStyle: { color: '#8a8f98' } };
+        opt2.series = [{ type: 'scatter', data: pts, symbolSize: (v) => Math.max(8, Math.min(34, Math.sqrt(v[2]) * 3)), itemStyle: { color: (p) => HARNESS_COLORS[p.data.harness] || '#8a8f98', opacity: 0.85 } }];
+        echarts.init(c2, 'dark').setOption(opt2);
+      }
+      // Adjacent data table (NFR-043)
+      const tbl = document.getElementById('group-m1-table');
+      if (tbl) {
+        let html = '<table style="width:100%;font-size:12px;"><thead><tr><th>Harness</th><th>Model</th><th>Tool calls</th><th>Conversations</th><th>Failed %</th><th>Est. cost $</th><th>Median session</th></tr></thead><tbody>';
+        ds.top_models.slice(0, 12).forEach(m => {
+          const fr = m.failure_rate != null ? Math.round(m.failure_rate * 100) + '%' : 'n/a';
+          const dur = m.median_duration_s != null ? (m.median_duration_s > 3600 ? (m.median_duration_s/3600).toFixed(1) + 'h' : Math.round(m.median_duration_s) + 's') : '—';
+          html += '<tr><td>' + escapeHTML(m.harness) + '</td><td>' + escapeHTML(m.model) + '</td><td>' + m.tool_calls + '</td><td>' + m.conversations + '</td><td>' + fr + '</td><td>' + (m.est_cost_usd || 0).toFixed(2) + '</td><td>' + dur + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        tbl.innerHTML = html;
+      }
+    },
+    'panel-value': (el) => {
+      const ds = data.telemetry;
+      if (!ds || !ds.subscriptions) return;
+      renderPanelFreshness(el, ds.generated_at);
+      if (typeof echarts === 'undefined') return;
+      const DV = { subscription: '#4ecdc4', free_or_metered: '#ffb020' };
+      const c1 = document.getElementById('figure-v1');
+      if (c1) {
+        const rows = ds.subscriptions.slice().sort((a,b) => (b.best_month_extracted_usd||0) - (a.best_month_extracted_usd||0));
+        const opt1 = baseChartOption('Best observed month: extracted value vs quota — your $20/$10 subs as sunk cost');
+        opt1.grid = { left: 8, right: 16, top: 34, bottom: 6, containLabel: true };
+        opt1.tooltip = { trigger: 'axis', axisPointer: { type: 'shadow' } };
+        const qL = (q) => 'quota $' + q;
+        const yNames = rows.map(s => s.provider);
+        opt1.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt1.yAxis = { type: 'category', data: yNames.slice().reverse(), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
+        opt1.series = [
+          { name: 'quota', type: 'bar', barGap: '-100%', data: rows.map(s => ({value: s.quota_usd, itemStyle:{color:'rgba(255,255,255,0.08)'}})).slice().reverse(), label: { show: true, position: 'right', color: '#8a8f98', fontSize: 10, formatter: (p) => qL(p.value) } },
+          { name: 'extracted', type: 'bar', barWidth: '58%', data: rows.map(s => { const v = s.best_month_extracted_usd || 0; const pct = s.best_month_roi ? (s.best_month_roi).toFixed(0) + 'x' : '-'; return { value: v, itemStyle: { color: v > s.quota_usd ? '#4ecdc4' : '#7170ff' }, label: v > 5 ? { show: true, position: 'insideLeft', color: '#fff', fontSize: 11, fontWeight: 600, formatter: '$' + v.toFixed(0) + ' (' + pct + ')' } : undefined }; }).slice().reverse() },
+        ];
+        echarts.init(c1, 'dark').setOption(opt1);
+      }
+      const c2 = document.getElementById('figure-v2');
+      if (c2) {
+        const projs = (ds.by_project || []).slice(0, 10).reverse();
+        const opt2 = baseChartOption('Top projects by extracted value (all months)');
+        opt2.grid = { left: 8, right: 16, top: 34, bottom: 6, containLabel: true };
+        opt2.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt2.yAxis = { type: 'category', data: projs.map(p => p.project.length > 28 ? p.project.slice(0, 27) + '…' : p.project), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
+        opt2.tooltip = { trigger: 'item', formatter: (p) => { const r = projs[p.dataIndex]; return '<strong>' + escapeHTML(r.project) + '</strong><br/>Extracted: $' + r.est_cost_usd.toFixed(2) + '<br/>Tool calls: ' + r.tool_calls; } };
+        opt2.series = [{ type: 'bar', data: projs.map(p => ({ value: p.est_cost_usd, itemStyle: { color: '#7170ff' } })) }];
+        echarts.init(c2, 'dark').setOption(opt2);
+      }
+      const c3 = document.getElementById('figure-v3');
+      if (c3 && ds.class_totals) {
+        const sTot = ds.class_totals.subscription || {tool_calls:0, conversations:0, est_cost_usd:0};
+        const fTot = ds.class_totals.free_or_metered || {tool_calls:0, conversations:0, est_cost_usd:0};
+        const opt3 = baseChartOption('Work volume by cost class (tool calls — all months)');
+        opt3.xAxis = { type: 'category', data: ['subscription ($20/$10 sunk)', 'free / metered'] };
+        opt3.yAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt3.tooltip = { trigger: 'axis' };
+        opt3.series = [{ type: 'bar', data: [ { value: sTot.tool_calls, itemStyle: { color: DV.subscription } }, { value: fTot.tool_calls, itemStyle: { color: DV.free_or_metered } } ], label: { show: true, position: 'top', color: '#c2c7d0' } }];
+        echarts.init(c3, 'dark').setOption(opt3);
+      }
+      const tbl = document.getElementById('group-v-table');
+      if (tbl && ds.by_project) {
+        let html = '<table style="width:100%;font-size:12px;"><thead><tr><th>Project</th><th>Tool calls</th><th>Extracted $</th><th>Convos</th></tr></thead><tbody>';
+        ds.by_project.slice(0, 12).forEach(p => { html += '<tr><td>' + escapeHTML(p.project) + '</td><td>' + p.tool_calls + '</td><td>' + p.est_cost_usd.toFixed(2) + '</td><td>' + p.conversations + '</td></tr>'; });
+        html += '</tbody></table>';
+        tbl.innerHTML = html;
+      }
+    },
     'panel-subvalue': (el) => {
       const ds = data.subscription_value;
       if (!ds) return;
@@ -429,11 +536,82 @@
         opt.xAxis.data = ds.months.map(m => m.month);
         opt.series = [
           { name: 'Market Value', type: 'bar', data: ds.months.map(m => m.market_value), itemStyle: { color: '#4ecdc4' } },
-          { name: 'Cost', type: 'line', data: ds.months.map(m => m.sub_cost), itemStyle: { color: '#8a8f98' } }
+          { name: 'Cost', type: 'line', connectNulls: true, data: ds.months.map(m => m.sub_cost), itemStyle: { color: '#8a8f98' } }
         ];
         echarts.init(c, 'dark').setOption(opt);
       }
     }
+  };
+
+
+  // Section 9b: Tasks — Living Documents + weekly reports, short/long toggle
+  const renderTasks = () => {
+    const list = document.getElementById('tasks-list');
+    const sumEl = document.getElementById('tasks-summary');
+    if (!list) return;
+    const ld = data.ld_tasks || {};
+    const items = ld.items || [];
+    let source = 'ld';
+    const render = () => {
+      let html = '';
+      if (source === 'ld') {
+        const open = items.filter(i => i.state === 'open');
+        const done = items.filter(i => i.state === 'completed');
+        if (sumEl) sumEl.innerHTML = '<strong>' + ld.totals.open + ' open</strong> · ' + ld.totals.completed + ' completed · across ' + Object.keys(ld.by_project || {}).length + ' Living Documents projects. Click a row to expand; "Open" jumps to the tasks page where you check it off.';
+        const groups = {};
+        open.forEach(i => (groups[i.project] = groups[i.project] || []).push(i));
+        const projNames = Object.keys(groups).sort();
+        html = projNames.map(proj => {
+          const rows = groups[proj].map(i =>
+            '<div class="task-item" data-long="' + escapeHTML(i.long || '') + '">' +
+              '<div class="task-short"><span class="task-caret">▸</span> ' + escapeHTML(i.short) + '</div>' +
+              '<div class="task-long" style="display:none;">' + escapeHTML(i.long || 'No further detail recorded.') +
+                ' <a href="' + i.link + '" style="color:var(--accent);font-size:11px;">Open in Living Documents →</a></div>' +
+            '</div>'
+          ).join('');
+          return '<div style="padding:6px var(--sp-3);background:rgba(255,255,255,0.03);font-weight:700;font-size:12px;margin-top:8px;">' + escapeHTML(proj) + ' <span style="color:#8a8f98;font-weight:400;">(' + groups[proj].length + ' open)</span></div>' + rows;
+        }).join('');
+        if (done.length) {
+          html += '<div style="padding:6px var(--sp-3);background:rgba(255,255,255,0.03);font-weight:700;font-size:12px;margin-top:14px;color:#8a8f98;">Recently completed (' + done.length + ')</div>';
+          html += done.slice(-8).reverse().map(i =>
+            '<div class="task-item"><div class="task-short" style="color:#8a8f98;">✓ ' + escapeHTML(i.short) + ' <span style="font-size:11px;">(' + escapeHTML(i.project) + ')</span></div></div>'
+          ).join('');
+        }
+      } else {
+        const openItems = (data.carry_over || []).filter(c => c.state !== 'completed').sort((a,b) => b.carry_age - a.carry_age);
+        if (sumEl) sumEl.innerHTML = openItems.length + ' open carry-over items from weekly reports, oldest first.';
+        html = openItems.map(c =>
+          '<div class="task-item"><div class="task-short"><span class="age-badge ' + (c.carry_age >= 5 ? 'age-high' : c.carry_age >= 3 ? 'age-med' : 'age-low') + '">' + c.carry_age + 'w</span> ' + escapeHTML(c.item_text) + '</div><div class="task-long" style="display:none;">Carried ' + c.carry_age + ' weeks · project: ' + escapeHTML(c.project_heading || '—') + ' · first seen ' + (c.first_seen_week || '?') + ', last seen ' + (c.last_seen_week || '?') + '.</div></div>'
+        ).join('') || '<div style="padding:12px;color:#8a8f98;">No open carry-over items.</div>';
+      }
+      list.innerHTML = html || '<div style="padding:12px;color:#8a8f98;">No tasks found.</div>';
+      list.querySelectorAll('.task-short').forEach(el => {
+        el.addEventListener('click', () => {
+          const item = el.closest('.task-item');
+          const long = item.querySelector('.task-long');
+          const caret = el.querySelector('.task-caret');
+          const showing = long.style.display !== 'none';
+          long.style.display = showing ? 'none' : 'block';
+          if (caret) caret.textContent = showing ? '▸' : '▾';
+        });
+      });
+    };
+    document.querySelectorAll('#tasks-source-tabs .ledger-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tasks-source-tabs .ledger-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        source = btn.dataset.src;
+        render();
+      });
+    });
+    const search = document.getElementById('tasks-search');
+    if (search) search.addEventListener('input', () => {
+      const q = search.value.toLowerCase();
+      list.querySelectorAll('.task-item').forEach(el => {
+        el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
+    render();
   };
 
   // Section 9: Weekly reports browser
@@ -584,8 +762,11 @@
     initDropdowns();
     renderProse();
     renderReportsBrowser();
+    renderTasks();
     // Populate panel summaries at init so users can see what's inside without opening
     const panelMeta = {
+      'panel-telemetry': { label: 'Model/provider effectiveness', dsKey: 'telemetry' },
+      'panel-value': { label: 'Subscription ROI & $/project', dsKey: 'telemetry' },
       'panel-projects': { label: 'Top projects by commits', dsKey: 'projects_stats' },
       'panel-git': { label: 'Repo states and health', dsKey: 'git_stats' },
       'panel-harness': { label: 'Sessions per harness', dsKey: 'harness_stats' },
@@ -617,7 +798,20 @@
 
     renderDiagnostics();
     initLazyCharts();
-
+    // Sticky-nav scroll-spy: highlight the section in view.
+    const navLinks = Array.from(document.querySelectorAll('#topnav a[href^="#"]'));
+    const spyTargets = navLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    if ('IntersectionObserver' in window && spyTargets.length) {
+      const setActive = (id) => {
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      };
+      const spyObs = new IntersectionObserver((entries) => {
+        entries.forEach(ent => {
+          if (ent.isIntersecting) setActive(ent.target.id);
+        });
+      }, { rootMargin: '-62px 0px -60% 0px', threshold: 0 });
+      spyTargets.forEach(t => spyObs.observe(t));
+    }
     window.addEventListener('resize', () => {
       if (typeof echarts !== 'undefined') {
         document.querySelectorAll('.chart, .chart-lazy').forEach(el => {
