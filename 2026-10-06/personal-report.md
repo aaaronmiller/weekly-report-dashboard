@@ -29,7 +29,7 @@
 | LIVING_DOCUMENTS (working tree, uncommitted) | 0 commits / 4 in-window | 49 | +423 / -167 |
 | LIVING_DOCUMENTS (committed Sep 25) | 4 | ~40 | footer retune + verdicts |
 
-Authorship note: franken_fad `main == origin/main` (in sync, 0 ahead/behind). Of 13 commits, 3 authored by Jeff Emanuel (Sep 24-27), 10 by Dicklesworthstone (contributor, commits Sep 25-Oct 6, same committer email `jeff141421@gmail.com` family). Aaron authored: living-documents-new c5d98dc, dashboard dea9bf9, LD Sep-25 units. voicestudio 3915a62 by debpalash (upstream release, NOT Aaron's work — excluded from Work Done credit, noted for accuracy).
+Authorship note: franken_fad `main == origin/main` (in sync, 0 ahead/behind). Of 13 commits, 3 authored by Jeff Emanuel (Sep 24-27), 10 by Dicklesworthstone (contributor, commits Sep 25-Oct 6, same committer email `[contributor email redacted]` family). Aaron authored: living-documents-new c5d98dc, dashboard dea9bf9, LD Sep-25 units. voicestudio 3915a62 by debpalash (upstream release, NOT Aaron's work — excluded from Work Done credit, noted for accuracy).
 
 ## Work Done
 
