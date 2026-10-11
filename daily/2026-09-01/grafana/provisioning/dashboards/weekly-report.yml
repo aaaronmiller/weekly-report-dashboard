@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: weekly-report-suite
+    orgId: 1
+    folder: Weekly Report Suite
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
