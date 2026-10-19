@@ -63,7 +63,7 @@ Closes the top carry-over: the nine-module quota stack that existed only as untr
 
 - Git-sync handoff (08-03/08-04): first bounded reconciliation pass took `/code` from 74 to 77 percent clean; pushed reggae-wars, model-scan, and classifier; merged last30days locally with a recovery ref; repaired and committed project_dashboard, whose archived remote rejected the push (flagged in `git-sync-attention.md`).
 - Question-submission-flow audit (08-04): the user-reported defect (a submitted question receipt is not discoverable or re-submittable) was confirmed as a control-plane usability defect, not canonical data loss; end-to-end audit scoped: receipt creation, review routing, acknowledgement, index navigation.
-- `custom-skills` 08-05: "Living Documents: honest affordance and a single settings surface" -- renderer rework (app.js +253 / styles.css +186), SKILL.md affordance updates, deprecated-strata housekeeping.
+- `custom-skills` 08-05: "Living Documents: honest affordance and a single settings surface" -- renderer rework (app.js +253 / styles.css +186), SKILL.md affordance updates, deprecated-spec-prep housekeeping.
 - `living-documents` 08-04 backup commit preserving consolidation state.
 
 ### Career (this week)

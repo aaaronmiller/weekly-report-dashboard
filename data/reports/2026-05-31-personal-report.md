@@ -25,7 +25,7 @@ This report is grounded in direct artifact inspection and session audit. The fol
 - **Dashboard server**: `/home/cheta/code2/daily-radar/dashboard/server.py` exists (4445 bytes) but was never started
 - **Wiki concept pages**: `/home/cheta/wiki/concepts/daily-radar.md`, `/home/cheta/wiki/concepts/sliither-report-format.md`, `/home/cheta/wiki/concepts/cross-provider-session-tracking.md`
 - **Agents infrastructure plans**: `/home/cheta/code/agents/PLAN.md` (360 lines, Phase 2 infrastructure overhaul with 30-project market research), `/home/cheta/code/agents/PIPELINES.md` (183 lines, agent-skill pipeline definitions)
-- **Custom skills**: `/home/cheta/code/custom-skills/` contains 30+ skill directories (deliberative-refinement, strata, speckit-autonomous-run, skill-creator, etc.)
+- **Custom skills**: `/home/cheta/code/custom-skills/` contains 30+ skill directories (deliberative-refinement, spec-prep, speckit-autonomous-run, skill-creator, etc.)
 - **Model-scan**: `/home/cheta/code/model-scan/` -- git repository with contracts directory
 - **Claude Code Proxy**: `/home/cheta/code/claude-code-proxy/` (41 directories)
 - **Hermes Agent**: `/home/cheta/code/hermes-agent/` (33 directories) with tests/ directory and plugin system
@@ -105,7 +105,7 @@ Both documents are planning artifacts. No code was generated from these plans th
 
 The `/home/cheta/code/custom-skills/` directory contains 30+ skill directories that were initialized and imported. Key skills include:
 - deliberative-refinement (multi-step reasoning refinement)
-- strata (architecture/planning)
+- spec-prep (architecture/planning)
 - speckit-autonomous-run (autonomous spec generation)
 - skill-creator (meta-skill for creating skills)
 - multi-transcript-synthesis (cross-session synthesis)

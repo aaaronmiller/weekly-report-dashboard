@@ -144,7 +144,7 @@
         "frontend-design-masterclass: oklch palettes, and the Front-End Checklist",
         "fix(audit-sync): skip hidden directories in repo discovery",
         "restore: bring back erotic-seduction skill (was removed in 2f0bc18 without clear intent)",
-        "strata: scope the description to intent recovery only",
+        "spec-prep: scope the description to intent recovery only",
         "chore: remove erotic-seduction skill (directory deleted from disk)",
         "Revert \"docs(git-audit-sync): clarify scope is backing up YOUR work off this machine\""
       ],
