@@ -13,8 +13,17 @@
       tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   };
   const getSelectedWeek = () => {
-    const sel = document.getElementById('week-selector');
-    return sel ? sel.value : (weeks.length ? weeks[weeks.length-1].week_ending : null);
+    const sel = document.getElementById('report-week') || document.getElementById('week-selector');
+    if (sel && sel.value) return sel.value;
+    const latestReport = weeks.slice().reverse().find(w => w.prose_html);
+    return latestReport ? latestReport.week_ending : (weeks.length ? weeks[weeks.length-1].week_ending : null);
+  };
+  // Minimal escaped-markdown renderer: escape first, then allow **bold** and `code`.
+  const mdText = (str) => {
+    if (!str) return '';
+    return escapeHTML(str)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.+?)`/g, '<code>$1</code>');
   };
   const baseChartOption = (title) => ({
     title: { text: title, textStyle: { color: '#f7f8f8', fontSize: 13, fontWeight: 'normal' }, left: 4, top: 2 },
@@ -104,18 +113,17 @@
     const proj = data.project_activity || [];
     const recentWk = labels[labels.length - 1];
     proj.filter(p => p.week_ending === recentWk && p.uncommitted_count > 0).forEach(p => {
-      html += `<div class="action-item"><span class="action-type push">PUSH</span> ${p.project_name} has ${p.uncommitted_count} uncommitted changes</div>`;
+      html += `<div class="action-item"><span class="action-type push">PUSH</span> ${escapeHTML(p.project_name)} has ${p.uncommitted_count} uncommitted changes</div>`;
     });
-    
     const git = data.git_stats || {};
     const repos = git.repositories || [];
     repos.filter(r => r.behind > 0).forEach(r => {
-      html += `<div class="action-item"><span class="action-type pull">PULL</span> ${r.name} is ${r.behind} commits behind</div>`;
+      html += `<div class="action-item"><span class="action-type pull">PULL</span> ${escapeHTML(r.name)} is ${r.behind} commits behind</div>`;
     });
     
     const openItems = (data.carry_over || []).filter(c => c.state !== 'completed');
     openItems.filter(c => c.state === 'stalled' && c.carry_age >= 6).forEach(c => {
-      html += `<div class="action-item"><span class="action-type retire">RETIRE</span> "${escapeHTML(c.item_text)}" (Age: ${c.carry_age}w)</div>`;
+      html += `<div class="action-item"><span class="action-type retire">RETIRE</span> <span>${mdText(c.item_text)}</span> (Age: ${c.carry_age}w)</div>`;
     });
     
     weeks.filter(w => w.is_dark_work).slice(-3).forEach(w => {
@@ -165,18 +173,21 @@
     });
   };
 
-  // Section 5: Core figures 1-4
+  // Section 5: Core figures 1-4. Titles live in <figcaption> in the template;
+  // chart-internal titles stay empty so there is exactly one heading per chart.
+  // connectNulls is false everywhere: missing weeks are gaps, never bridges.
   const renderFigure1 = (el) => {
     if (!el || typeof echarts === 'undefined') return;
-    const option = baseChartOption('Figure 1 — Throughput Trend (log scale)');
+    if (!weeks.some(w => w.sessions != null)) { el.innerHTML = '<p class="chart-empty">No session data for this window.</p>'; return; }
+    const option = baseChartOption('');
     option.legend = { data: ['Sessions','Commits','Files','Projects'], textStyle: { color: '#8a8f98' } };
     option.xAxis.data = labels;
     option.yAxis = { type: 'log', logBase: 10, axisLabel: { color: '#8a8f98' } };
     option.series = [
-      {name: 'Sessions', type: 'line', connectNulls: true, data: weeks.map(w => w.sessions), itemStyle: { color: '#7170ff' }},
-      {name: 'Commits', type: 'line', connectNulls: true, data: weeks.map(w => w.commits), itemStyle: { color: '#ff7a7a' }},
-      {name: 'Files', type: 'line', connectNulls: true, data: weeks.map(w => w.files_changed), itemStyle: { color: '#4ecdc4' }},
-      {name: 'Projects', type: 'line', connectNulls: true, data: weeks.map(w => w.projects_active), itemStyle: { color: '#ffb020' }}
+      {name: 'Sessions', type: 'line', connectNulls: false, data: weeks.map(w => w.sessions), itemStyle: { color: '#7170ff' }},
+      {name: 'Commits', type: 'line', connectNulls: false, data: weeks.map(w => w.commits), itemStyle: { color: '#ff7a7a' }},
+      {name: 'Files', type: 'line', connectNulls: false, data: weeks.map(w => w.files_changed), itemStyle: { color: '#4ecdc4' }},
+      {name: 'Projects', type: 'line', connectNulls: false, data: weeks.map(w => w.projects_active), itemStyle: { color: '#ffb020' }}
     ];
     const chart = echarts.getInstanceByDom(el) || echarts.init(el, 'dark');
     chart.setOption(option);
@@ -185,13 +196,14 @@
 
   const renderFigure2 = (el) => {
     if (!el || typeof echarts === 'undefined') return;
-    const option = baseChartOption('Figure 2 — Dark Work: sessions per commit (higher = less visible to git)');
+    if (!weeks.some(w => w.sessions_per_commit != null)) { el.innerHTML = '<p class="chart-empty">No sessions-per-commit data for this window.</p>'; return; }
+    const option = baseChartOption('');
     option.xAxis.data = labels;
     const threshold = data.config?.dark_work_threshold || 8.0;
     option.series = [{
-      name: 'SPC', type: 'line', connectNulls: true, data: weeks.map(w => w.sessions_per_commit),
+      name: 'SPC', type: 'line', connectNulls: false, data: weeks.map(w => w.sessions_per_commit),
       itemStyle: { color: '#ffb020' },
-      markLine: { data: [{ yAxis: threshold, name: 'threshold' }], lineStyle: { color: '#ff4d4d' } }
+      markLine: { data: [{ yAxis: threshold, name: 'dark-work threshold' }], lineStyle: { color: '#ff4d4d' } }
     }];
     const chart = echarts.getInstanceByDom(el) || echarts.init(el, 'dark');
     chart.setOption(option);
@@ -203,9 +215,9 @@
     if (!el || typeof echarts === 'undefined') return;
     const wk = getSelectedWeek();
     const rec = weeks.find(w => w.week_ending === wk);
-    if (!rec || !rec.daily_sessions) return;
+    if (!rec || !rec.daily_sessions) { el.innerHTML = '<p class="chart-empty">No daily sessions for week ' + escapeHTML(wk || '?') + '.</p>'; return; }
     const daily = rec.daily_sessions;
-    const option = baseChartOption('Figure 3 — Daily Sessions ('+wk+')');
+    const option = baseChartOption('Daily sessions, week of ' + wk);
     option.xAxis.data = daily.map(d => d.date);
     option.series = [{
       name: 'Sessions', type: 'bar', data: daily.map(d => d.sessions), itemStyle: { color: '#7170ff' }
@@ -219,7 +231,8 @@
     if (!el || typeof echarts === 'undefined') return;
     const wk = getSelectedWeek();
     const acts = (data.project_activity || []).filter(p => p.week_ending === wk);
-    const option = baseChartOption('Figure 4 — Project Activity ('+wk+')');
+    if (!acts.length) { el.innerHTML = '<p class="chart-empty">No project activity for week ' + escapeHTML(wk || '?') + '.</p>'; return; }
+    const option = baseChartOption('Commits vs uncommitted, week of ' + wk);
     option.xAxis.data = acts.map(a => a.project_name);
     option.legend = { data: ['Commits','Uncommitted'], textStyle: { color: '#8a8f98' } };
     option.series = [
@@ -246,12 +259,11 @@
         open.forEach(it => {
           const ageClass = it.carry_age >= 5 ? 'age-high' : (it.carry_age >= 3 ? 'age-med' : 'age-low');
           const stalled = it.carry_age >= (data.config?.stall_age || 3) ? ' stalled' : '';
-          html += `<div class="ledger-item${stalled}"><span class="age-badge ${ageClass}">${it.carry_age}</span><span class="item-text">${escapeHTML(it.item_text)}</span><span class="item-project">${escapeHTML(it.project_heading)}</span></div>`;
+          html += `<div class="ledger-item${stalled}"><span class="age-badge ${ageClass}">${it.carry_age}</span><span class="item-text">${mdText(it.item_text)}</span>${it.project_heading && it.project_heading !== 'Uncategorized' ? '<span class="item-project">' + escapeHTML(it.project_heading) + '</span>' : ''}</div>`;
         });
       } else if (currentTab === 'completed') {
-        const done = items.filter(c => c.state === 'completed');
         done.forEach(it => {
-          html += `<div class="ledger-item"><span class="age-badge age-low">✓</span><span class="item-text">${escapeHTML(it.item_text)}</span><span class="item-project">${escapeHTML(it.project_heading)}</span></div>`;
+          html += `<div class="ledger-item"><span class="age-badge age-low">✓</span><span class="item-text">${mdText(it.item_text)}</span>${it.project_heading && it.project_heading !== 'Uncategorized' ? '<span class="item-project">' + escapeHTML(it.project_heading) + '</span>' : ''}</div>`;
         });
       } else if (currentTab === 'project') {
         const byProj = {};
@@ -263,7 +275,7 @@
           html += `<div style="padding:var(--sp-2) var(--sp-3);background:rgba(255,255,255,0.02);font-weight:bold;">${escapeHTML(proj)}</div>`;
           byProj[proj].forEach(it => {
             const ageClass = it.carry_age >= 5 ? 'age-high' : (it.carry_age >= 3 ? 'age-med' : 'age-low');
-            html += `<div class="ledger-item"><span class="age-badge ${ageClass}">${it.carry_age}</span><span class="item-text">${escapeHTML(it.item_text)}</span></div>`;
+            html += `<div class="ledger-item"><span class="age-badge ${ageClass}">${it.carry_age}</span><span class="item-text">${mdText(it.item_text)}</span></div>`;
           });
         });
       }
@@ -315,7 +327,7 @@
     });
   };
 
-  // Section 8: Data source panels (lazy)
+  // Section 8: Data source panel freshness badge (shared by all panels).
   const renderPanelFreshness = (panel, dt) => {
     const summaryEl = panel.querySelector('.panel-summary');
     if (!summaryEl || !dt) return;
@@ -323,6 +335,35 @@
     let fClass = diffDays < 3 ? 'fresh' : diffDays < 7 ? 'stale' : 'old';
     let text = diffDays < 1 ? 'Today' : `${Math.floor(diffDays)}d ago`;
     summaryEl.innerHTML = `<span class="freshness-badge ${fClass}">${text}</span>`;
+  };
+  const fmtMoney = (v) => '$' + (v == null ? '—' : Number(v).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+  const fmtInt = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US'));
+  const renderCostHero = () => {
+    const ds = data.tokscale_stats;
+    const set = (id, val, detail, sev) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.querySelector('.card-value').textContent = val;
+      el.querySelector('.card-detail').textContent = detail;
+      el.className = 'attention-card severity-' + sev;
+    };
+    if (!ds || !ds.by_client || !ds.by_client.length) {
+      set('cost-total', 'no data', 'tokscale scan missing', 'info');
+      set('cost-top', '—', '—', 'info');
+      set('cost-cache', '—', '—', 'info');
+      set('cost-msgs', '—', '—', 'info');
+      return;
+    }
+    const top = ds.by_client[0];
+    const cacheIn = (ds.total_cache_read || 0);
+    const allIn = (ds.total_input || 0) + cacheIn + (ds.total_cache_write || 0);
+    const cachePct = allIn > 0 ? Math.round(100 * cacheIn / allIn) + '% of input tokens' : 'n/a';
+    set('cost-total', fmtMoney(ds.total_cost), 'all local history · verified', ds.total_cost > 1000 ? 'med' : 'low');
+    set('cost-top', fmtMoney(top.cost), top.client + ' · ' + (top.models[0] ? top.models[0].model : ''), 'info');
+    set('cost-cache', cachePct, fmtInt(cacheIn) + ' cache-read tokens', 'info');
+    set('cost-msgs', fmtInt(ds.total_messages), 'across ' + ds.by_client.length + ' clients', 'info');
+    const src = document.getElementById('cost-source');
+    if (src) src.textContent = 'tokscale offline scan · built ' + String(data.generated_at || '').slice(0, 10);
   };
 
   const panelRenderers = {
@@ -333,7 +374,7 @@
       const c = el.querySelector('.chart-lazy');
       if (c && typeof echarts !== 'undefined') {
         const top = ds.projects.slice(0, 10).reverse();
-        const opt = baseChartOption('Top Projects by Commits');
+        const opt = baseChartOption('');
         opt.xAxis = { type: 'value' };
         opt.yAxis = { type: 'category', data: top.map(p => p.project) };
         opt.series = [{ type: 'bar', data: top.map(p => p.commits || 0), itemStyle: { color: '#7170ff' } }];
@@ -346,7 +387,7 @@
       renderPanelFreshness(el, ds.generated_at || data.generated_at);
       const c = el.querySelector('.chart-lazy');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Git Repo States');
+        const opt = baseChartOption('');
         const counts = { clean: 0, dirty: 0, behind: 0 };
         (ds.repositories || []).forEach(r => {
           if (r.uncommitted > 0) counts.dirty++;
@@ -364,7 +405,7 @@
       renderPanelFreshness(el, data.generated_at);
       const c = el.querySelector('.chart-lazy');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Sessions per Harness');
+        const opt = baseChartOption('');
         opt.xAxis.data = ds.harness.map(h => h.harness);
         opt.series = [{ type: 'bar', data: ds.harness.map(h => h.sessions), itemStyle: { color: '#4ecdc4' } }];
         echarts.init(c, 'dark').setOption(opt);
@@ -376,7 +417,7 @@
       renderPanelFreshness(el, data.generated_at);
       const c = el.querySelector('.chart-lazy, #figure-cc1, #figure-c1');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Claude Daily Activity');
+        const opt = baseChartOption('');
         opt.xAxis.data = ds.days.map(d => d.date.slice(5));
         opt.series = [{ name: 'Messages', type: 'bar', data: ds.days.map(d => d.messages), itemStyle: { color: '#ffb020' } }];
         echarts.init(c, 'dark').setOption(opt);
@@ -388,9 +429,9 @@
       renderPanelFreshness(el, data.generated_at);
       const c = el.querySelector('.chart-lazy');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Obsidian Notes per Month');
+        const opt = baseChartOption('');
         opt.xAxis.data = ds.months.map(m => m.month);
-        opt.series = [{ type: 'line', connectNulls: true, data: ds.months.map(m => m.docs), itemStyle: { color: '#a0e8af' } }];
+        opt.series = [{ type: 'line', connectNulls: false, data: ds.months.map(m => m.docs), itemStyle: { color: '#a0e8af' } }];
         echarts.init(c, 'dark').setOption(opt);
       }
     },
@@ -400,7 +441,7 @@
       renderPanelFreshness(el, data.generated_at);
       const c = el.querySelector('.chart-lazy, #figure-br1, #figure-b1');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Top Domains');
+        const opt = baseChartOption('');
         const doms = (ds.top_domains||[]).slice(0, 10).reverse();
         opt.xAxis = { type: 'value' };
         opt.yAxis = { type: 'category', data: doms.map(d => d[0]) };
@@ -414,7 +455,7 @@
       renderPanelFreshness(el, data.generated_at);
       const c = el.querySelector('.chart-lazy');
       if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Upgrades per Month');
+        const opt = baseChartOption('');
         opt.xAxis.data = (ds.upgrades_by_month||[]).map(u => u.month);
         opt.series = [{ type: 'bar', data: (ds.upgrades_by_month||[]).map(u => u.packages), itemStyle: { color: '#ff7a7a' } }];
         echarts.init(c, 'dark').setOption(opt);
@@ -430,7 +471,7 @@
       // M1a: tool-call volume by model, colored by harness
       const c1 = document.getElementById('figure-m1a');
       if (c1) {
-        const opt1 = baseChartOption('Tool calls by model/provider (top combos) — bar color = harness');
+        const opt1 = baseChartOption('');
         opt1.grid = { left: 8, right: 60, top: 34, bottom: 6, containLabel: true };
         opt1.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
         opt1.yAxis = { type: 'category', data: top.map(m => m.model.length > 34 ? m.model.slice(0, 33) + '…' : m.model), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
@@ -453,7 +494,7 @@
           value: [m.tool_calls, Math.max(m.est_cost_usd, 0.02), m.conversations],
           harness: m.harness,
         }));
-        const opt2 = baseChartOption('Cost vs tool volume (lower-right = best value; bubble = conversations)');
+        const opt2 = baseChartOption('');
         opt2.grid = { left: 8, right: 24, top: 34, bottom: 6, containLabel: true };
         opt2.tooltip = { trigger: 'item', formatter: (p) => '<strong>' + escapeHTML(p.name) + '</strong><br/>Tool calls: ' + p.value[0] + '<br/>Est. cost: $' + p.value[1].toFixed(2) + '<br/>Conversations: ' + p.value[2] };
         opt2.xAxis = { type: 'value', name: 'tool calls', nameLocation: 'middle', nameGap: 24, axisLabel: { color: '#8a8f98' }, nameTextStyle: { color: '#8a8f98' } };
@@ -483,7 +524,7 @@
       const c1 = document.getElementById('figure-v1');
       if (c1) {
         const rows = ds.subscriptions.slice().sort((a,b) => (b.best_month_extracted_usd||0) - (a.best_month_extracted_usd||0));
-        const opt1 = baseChartOption('Best observed month: extracted value vs quota — your $20/$10 subs as sunk cost');
+        const opt1 = baseChartOption('');
         opt1.grid = { left: 8, right: 16, top: 34, bottom: 6, containLabel: true };
         opt1.tooltip = { trigger: 'axis', axisPointer: { type: 'shadow' } };
         const qL = (q) => 'quota $' + q;
@@ -499,7 +540,7 @@
       const c2 = document.getElementById('figure-v2');
       if (c2) {
         const projs = (ds.by_project || []).slice(0, 10).reverse();
-        const opt2 = baseChartOption('Top projects by extracted value (all months)');
+        const opt2 = baseChartOption('');
         opt2.grid = { left: 8, right: 16, top: 34, bottom: 6, containLabel: true };
         opt2.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
         opt2.yAxis = { type: 'category', data: projs.map(p => p.project.length > 28 ? p.project.slice(0, 27) + '…' : p.project), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
@@ -511,7 +552,7 @@
       if (c3 && ds.class_totals) {
         const sTot = ds.class_totals.subscription || {tool_calls:0, conversations:0, est_cost_usd:0};
         const fTot = ds.class_totals.free_or_metered || {tool_calls:0, conversations:0, est_cost_usd:0};
-        const opt3 = baseChartOption('Work volume by cost class (tool calls — all months)');
+        const opt3 = baseChartOption('');
         opt3.xAxis = { type: 'category', data: ['subscription ($20/$10 sunk)', 'free / metered'] };
         opt3.yAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
         opt3.tooltip = { trigger: 'axis' };
@@ -526,21 +567,52 @@
         tbl.innerHTML = html;
       }
     },
-    'panel-subvalue': (el) => {
-      const ds = data.subscription_value;
-      if (!ds) return;
+    'panel-tokscale': (el) => {
+      const ds = data.tokscale_stats;
+      if (!ds || !ds.by_client) return;
       renderPanelFreshness(el, data.generated_at);
-      const c = el.querySelector('.chart-lazy');
-      if (c && typeof echarts !== 'undefined') {
-        const opt = baseChartOption('Market Value vs Cost');
-        opt.xAxis.data = ds.months.map(m => m.month);
-        opt.series = [
-          { name: 'Market Value', type: 'bar', data: ds.months.map(m => m.market_value), itemStyle: { color: '#4ecdc4' } },
-          { name: 'Cost', type: 'line', connectNulls: true, data: ds.months.map(m => m.sub_cost), itemStyle: { color: '#8a8f98' } }
-        ];
-        echarts.init(c, 'dark').setOption(opt);
+      if (typeof echarts === 'undefined') return;
+      const PALETTE = ['#7170ff', '#4ecdc4', '#ffb020', '#ff7a7a', '#a0e8af', '#e0aaff', '#f4a261', '#8a8f98'];
+      const top = ds.by_client.slice(0, 12);
+      const c1 = document.getElementById('figure-t1');
+      if (c1) {
+        const opt1 = baseChartOption('');
+        opt1.grid = { left: 8, right: 16, top: 12, bottom: 6, containLabel: true };
+        opt1.tooltip = { trigger: 'item', formatter: (p) => '<strong>' + escapeHTML(top[p.dataIndex].client) + '</strong><br/>Verified spend: ' + fmtMoney(top[p.dataIndex].cost) + '<br/>Messages: ' + fmtInt(top[p.dataIndex].messages) };
+        opt1.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt1.yAxis = { type: 'category', data: top.map(d => d.client).slice().reverse(), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
+        opt1.series = [{ type: 'bar', data: top.map((d, i) => ({ value: d.cost, itemStyle: { color: PALETTE[i % PALETTE.length] } })).reverse() }];
+        echarts.init(c1, 'dark').setOption(opt1);
       }
-    }
+      const c2 = document.getElementById('figure-t2');
+      if (c2) {
+        const opt2 = baseChartOption('');
+        opt2.grid = { left: 8, right: 16, top: 12, bottom: 6, containLabel: true };
+        opt2.legend = { data: ['input', 'output', 'cache read', 'cache write'], textStyle: { color: '#8a8f98' } };
+        opt2.tooltip = { trigger: 'axis', axisPointer: { type: 'shadow' } };
+        opt2.xAxis = { type: 'value', axisLabel: { color: '#8a8f98' } };
+        opt2.yAxis = { type: 'category', data: top.map(d => d.client).slice().reverse(), axisLabel: { color: '#c2c7d0', fontSize: 11 } };
+        const rev = top.slice().reverse();
+        opt2.series = [
+          { name: 'input', type: 'bar', stack: 'tok', data: rev.map(d => d.input), itemStyle: { color: '#7170ff' } },
+          { name: 'output', type: 'bar', stack: 'tok', data: rev.map(d => d.output), itemStyle: { color: '#4ecdc4' } },
+          { name: 'cache read', type: 'bar', stack: 'tok', data: rev.map(d => d.cache_read), itemStyle: { color: '#ffb020' } },
+          { name: 'cache write', type: 'bar', stack: 'tok', data: rev.map(d => d.cache_write), itemStyle: { color: '#ff7a7a' } }
+        ];
+        echarts.init(c2, 'dark').setOption(opt2);
+      }
+      const tbl = document.getElementById('group-t-table');
+      if (tbl) {
+        let html = '<table style="width:100%;font-size:12px;"><thead><tr><th>Client</th><th>Top model</th><th>Verified $</th><th>Msgs</th><th>Cache-read share</th></tr></thead><tbody>';
+        top.forEach(d => {
+          const allIn = (d.input || 0) + (d.cache_read || 0) + (d.cache_write || 0);
+          const pct = allIn > 0 ? Math.round(100 * (d.cache_read || 0) / allIn) + '%' : '—';
+          html += '<tr><td>' + escapeHTML(d.client) + '</td><td>' + escapeHTML(d.models[0] ? d.models[0].model : '—') + '</td><td>' + fmtMoney(d.cost) + '</td><td>' + fmtInt(d.messages) + '</td><td>' + pct + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        tbl.innerHTML = html;
+      }
+    },
   };
 
 
@@ -557,15 +629,16 @@
       if (source === 'ld') {
         const open = items.filter(i => i.state === 'open');
         const done = items.filter(i => i.state === 'completed');
-        if (sumEl) sumEl.innerHTML = '<strong>' + ld.totals.open + ' open</strong> · ' + ld.totals.completed + ' completed · across ' + Object.keys(ld.by_project || {}).length + ' Living Documents projects. Click a row to expand; "Open" jumps to the tasks page where you check it off.';
+        const tot = (ld.totals && typeof ld.totals.open === 'number') ? ld.totals : {open: open.length, completed: done.length};
+        if (sumEl) sumEl.innerHTML = '<strong>' + tot.open + ' open</strong> · ' + ld.totals.completed + ' completed · across ' + Object.keys(ld.by_project || {}).length + ' Living Documents projects. Click a row to expand; "Open" jumps to the tasks page where you check it off.';
         const groups = {};
         open.forEach(i => (groups[i.project] = groups[i.project] || []).push(i));
         const projNames = Object.keys(groups).sort();
         html = projNames.map(proj => {
           const rows = groups[proj].map(i =>
             '<div class="task-item" data-long="' + escapeHTML(i.long || '') + '">' +
-              '<div class="task-short"><span class="task-caret">▸</span> ' + escapeHTML(i.short) + '</div>' +
-              '<div class="task-long" style="display:none;">' + escapeHTML(i.long || 'No further detail recorded.') +
+              '<div class="task-short"><span class="task-caret">▸</span> ' + mdText(i.short) + '</div>' +
+              '<div class="task-long" style="display:none;">' + mdText(i.long || 'No further detail recorded.') +
                 ' <a href="' + i.link + '" style="color:var(--accent);font-size:11px;">Open in Living Documents →</a></div>' +
             '</div>'
           ).join('');
@@ -574,14 +647,14 @@
         if (done.length) {
           html += '<div style="padding:6px var(--sp-3);background:rgba(255,255,255,0.03);font-weight:700;font-size:12px;margin-top:14px;color:#8a8f98;">Recently completed (' + done.length + ')</div>';
           html += done.slice(-8).reverse().map(i =>
-            '<div class="task-item"><div class="task-short" style="color:#8a8f98;">✓ ' + escapeHTML(i.short) + ' <span style="font-size:11px;">(' + escapeHTML(i.project) + ')</span></div></div>'
+            '<div class="task-item"><div class="task-short" style="color:#8a8f98;">✓ ' + mdText(i.short) + ' <span style="font-size:11px;">(' + escapeHTML(i.project) + ')</span></div></div>'
           ).join('');
         }
       } else {
         const openItems = (data.carry_over || []).filter(c => c.state !== 'completed').sort((a,b) => b.carry_age - a.carry_age);
         if (sumEl) sumEl.innerHTML = openItems.length + ' open carry-over items from weekly reports, oldest first.';
         html = openItems.map(c =>
-          '<div class="task-item"><div class="task-short"><span class="age-badge ' + (c.carry_age >= 5 ? 'age-high' : c.carry_age >= 3 ? 'age-med' : 'age-low') + '">' + c.carry_age + 'w</span> ' + escapeHTML(c.item_text) + '</div><div class="task-long" style="display:none;">Carried ' + c.carry_age + ' weeks · project: ' + escapeHTML(c.project_heading || '—') + ' · first seen ' + (c.first_seen_week || '?') + ', last seen ' + (c.last_seen_week || '?') + '.</div></div>'
+          '<div class="task-item"><div class="task-short"><span class="age-badge ' + (c.carry_age >= 5 ? 'age-high' : c.carry_age >= 3 ? 'age-med' : 'age-low') + '">' + c.carry_age + 'w</span> ' + mdText(c.item_text) + '</div><div class="task-long" style="display:none;">Carried ' + c.carry_age + ' weeks · project: ' + escapeHTML(c.project_heading || '—') + ' · first seen ' + (c.first_seen_week || '?') + ', last seen ' + (c.last_seen_week || '?') + '.</div></div>'
         ).join('') || '<div style="padding:12px;color:#8a8f98;">No open carry-over items.</div>';
       }
       list.innerHTML = html || '<div style="padding:12px;color:#8a8f98;">No tasks found.</div>';
@@ -600,7 +673,7 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('#tasks-source-tabs .ledger-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        source = btn.dataset.src;
+        source = (btn.dataset.src === 'reports') ? 'reports' : 'ld';
         render();
       });
     });
@@ -614,79 +687,96 @@
     render();
   };
 
-  // Section 9: Weekly reports browser
+  // Section 9: Weekly reports browser. Populates the #report-week picker and
+  // the archive list; both drive fig3/fig4/prose via getSelectedWeek.
   const renderReportsBrowser = () => {
     const list = document.getElementById('reports-list');
     const detail = document.getElementById('reports-detail');
     const weeklySummary = document.getElementById('weekly-summary');
-    if (!list || !detail) return;
-
-    // Populate weekly summary with latest week that has prose
+    const picker = document.getElementById('report-week');
+    if (picker && !picker.options.length) {
+      weeks.forEach(w => {
+        const o = document.createElement('option');
+        o.value = w.week_ending;
+        o.textContent = w.week_ending + (w.prose_html ? '' : ' (no report)');
+        picker.appendChild(o);
+      });
+      const latestReport = weeks.slice().reverse().find(w => w.prose_html);
+      picker.value = latestReport ? latestReport.week_ending : (weeks.length ? weeks[weeks.length - 1].week_ending : '');
+    }
+    if (list) {
+      let html = '<table style="width:100%;border-collapse:collapse;"><tbody>';
+      weeks.slice().reverse().forEach(w => {
+        const hasReport = !!w.prose_html;
+        const style = hasReport ? '' : 'color:#8a8f98;';
+        html += '<tr data-week="' + w.week_ending + '" style="cursor:' + (hasReport ? 'pointer' : 'default') + ';border-bottom:1px solid rgba(255,255,255,0.05);' + style + '"><td style="padding:var(--sp-2)">' + w.week_ending + '</td><td>' + w.coverage + '</td><td style="font-size:11px;color:#8a8f98;">' + (hasReport ? 'report' : 'no report') + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      list.innerHTML = html;
+      list.querySelectorAll('tr').forEach(tr => {
+        tr.addEventListener('click', () => {
+          const wk = tr.dataset.week;
+          if (picker) picker.value = wk;
+          renderFigure3(); renderFigure4(); renderReportViewer(wk);
+        });
+      });
+    }
     if (weeklySummary) {
       const latestWithProse = weeks.slice().reverse().find(w => w.prose_html);
       if (latestWithProse) {
-        const theme = (latestWithProse.prose_html.match(/<p>Subject:([^<]+)/) || [])[1];
-        weeklySummary.innerHTML = '<strong>Latest: ' + latestWithProse.week_ending + '</strong>' +
-          (theme ? ' — ' + theme.trim() : '') +
-          ' <span style="color:#8a8f98;font-size:11px;">Click a week below to read the full report.</span>';
+        weeklySummary.innerHTML = '<strong>Latest: ' + escapeHTML(latestWithProse.week_ending) + '</strong>' +
+          ' <span style="color:#8a8f98;font-size:11px;">Use the picker or click a week below to read its full report.</span>';
       } else {
         weeklySummary.textContent = 'No reports in corpus yet.';
       }
     }
-
-    let html = '<table style="width:100%;border-collapse:collapse;"><tbody>';
-    weeks.slice().reverse().forEach(w => {
-      const hasReport = !!w.prose_html;
-      const style = hasReport ? '' : 'color:#8a8f98;';
-      html += '<tr data-week="' + w.week_ending + '" style="cursor:' + (hasReport ? 'pointer' : 'default') + ';border-bottom:1px solid rgba(255,255,255,0.05);' + style + '"><td style="padding:var(--sp-2)">' + w.week_ending + '</td><td>' + w.coverage + '</td><td style="font-size:11px;color:#8a8f98;">' + (hasReport ? 'report' : 'no report') + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    list.innerHTML = html;
-
-    list.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const wk = tr.dataset.week;
-        const rec = weeks.find(x => x.week_ending === wk);
-        if (rec && rec.prose_html) {
-          detail.innerHTML = '<h3>' + wk + '</h3><div>' + rec.prose_html + '</div>';
-        }
-      });
-    });
+    renderReportViewer(getSelectedWeek());
   };
-
-  const renderProse = () => {
-    const wk = getSelectedWeek();
+  const renderReportViewer = (wk) => {
+    const viewer = document.getElementById('report-viewer');
     const rec = weeks.find(w => w.week_ending === wk);
-    const prose = document.getElementById('prose') || document.getElementById('prose-panel');
-    if (!prose || !rec) return;
-    prose.innerHTML = `<h3>Week ${wk}</h3><div class="prose-content">${rec.prose_html || '—'}</div>`;
+    if (viewer) viewer.innerHTML = rec && rec.prose_html ? '<h3>' + escapeHTML(wk) + '</h3><div>' + rec.prose_html + '</div>' : '<p style="color:#8a8f98;">No report for ' + escapeHTML(wk || '?') + ' — week has primary data only.</p>';
+    const detail = document.getElementById('reports-detail');
+    if (detail) detail.innerHTML = rec && rec.prose_html ? '<h3>' + escapeHTML(wk) + '</h3><div>' + rec.prose_html + '</div>' : '<p style="color:#8a8f98;">Select a week with a report.</p>';
+  };
+  const stepWeek = (dir) => {
+    if (!weeks.length) return;
+    const cur = weeks.findIndex(w => w.week_ending === getSelectedWeek());
+    const nxt = Math.min(weeks.length - 1, Math.max(0, (cur < 0 ? weeks.length - 1 : cur) + dir));
+    const picker = document.getElementById('report-week');
+    if (picker) picker.value = weeks[nxt].week_ending;
+    renderFigure3(); renderFigure4(); renderReportViewer(weeks[nxt].week_ending); markActiveWeek(weeks[nxt].week_ending);
+  };
+  const renderProse = () => {
+    renderReportViewer(getSelectedWeek());
+  };
+  // Picker change also refreshes the archive highlight.
+  const markActiveWeek = (wk) => {
+    document.querySelectorAll('#reports-list tr').forEach(tr => {
+      tr.style.background = (tr.dataset.week === wk) ? 'rgba(113,112,255,.08)' : '';
+    });
   };
 
   // Section 10: LLM supplement
   // Optionally handle LLM supplement here
   
-  // Section 11: Diagnostics
+  // Section 11: Diagnostics. Template owns the three cards; JS only fills values.
   const renderDiagnostics = () => {
-    const diag = document.getElementById('diagnostics');
-    if (!diag) return;
-    
     const asserts = data.assertions || [];
     const passed = asserts.filter(a => a.passed).length;
     const failed = asserts.length - passed;
     const qCount = weeks.filter(w => w.data_quality === 'verified').length;
-    
-    diag.innerHTML = `
-      <div class="diagnostics-grid">
-        <div class="diag-card">
-          <div class="diag-value ${failed > 0 ? 'assertion-fail' : 'assertion-pass'}">${passed}/${asserts.length}</div>
-          <div class="diag-label">Assertions</div>
-        </div>
-        <div class="diag-card">
-          <div class="diag-value">${qCount}</div>
-          <div class="diag-label">Verified Weeks</div>
-        </div>
-      </div>
-    `;
+    const aEl = document.getElementById('assertions-summary');
+    if (aEl) aEl.innerHTML = '<div class="diag-value ' + (failed > 0 ? 'assertion-fail' : 'assertion-pass') + '">' + passed + '/' + asserts.length + '</div>' +
+      (failed ? '<div style="font-size:11px;color:#ff7a7a;">' + escapeHTML(asserts.filter(a => !a.passed).map(a => a.assertion_id).join(', ')) + '</div>' : '');
+    const cEl = document.getElementById('coverage-breakdown');
+    if (cEl) {
+      const cov = data.coverage || {};
+      cEl.innerHTML = '<div class="diag-value">' + (cov.with_both || 0) + '/' + (cov.weeks_total || weeks.length) + '</div>' +
+        '<div style="font-size:11px;color:#8a8f98;">pair ' + (cov.with_pair || 0) + ' · bundle ' + (cov.with_bundle || 0) + ' · missing ' + (cov.missing || 0) + '</div>';
+    }
+    const qEl = document.getElementById('data-quality-summary');
+    if (qEl) qEl.innerHTML = '<div class="diag-value">' + qCount + '</div><div style="font-size:11px;color:#8a8f98;">verified of ' + weeks.length + ' weeks</div>';
   };
   const initLazyCharts = () => {
     if (typeof IntersectionObserver === 'undefined') {
@@ -712,7 +802,7 @@
           else if (el.id === 'figure2') renderFigure2(el);
           else {
             const panelId = el.closest('details')?.id;
-            if (panelId && panelRenderers[panelId]) panelRenderers[panelId](el.closest('details'));
+            if (panelId && panelRenderers[panelId]) { const p = el.closest('details'); if (!p._rendered) { p._rendered = true; try { panelRenderers[panelId](p); } catch (e) { p._rendered = false; throw e; } } }
           }
         } catch (e) {
           el.innerHTML = '<p style="color:#ff7a7a;font-size:12px;padding:12px;">chart failed: ' + escapeHTML(String(e.message || e)) + '</p>';
@@ -726,8 +816,10 @@
       panel.addEventListener('toggle', () => {
         if (!panel.open) return;
         panel.querySelectorAll('.chart-lazy').forEach(c => c.classList.add('loaded'));
-        if (panelRenderers[panel.id]) {
+        if (panelRenderers[panel.id] && !panel._rendered) {
+          panel._rendered = true;
           try { panelRenderers[panel.id](panel); } catch (e) {
+            panel._rendered = false;
             const first = panel.querySelector('.chart-lazy');
             if (first) first.innerHTML = '<p style="color:#ff7a7a;font-size:12px;padding:12px;">chart failed: ' + escapeHTML(String(e.message || e)) + '</p>';
           }
@@ -753,16 +845,22 @@
     renderFigure1(document.getElementById('figure1'));
     renderFigure2(document.getElementById('figure2'));
     
-    const sel = document.getElementById('week-selector');
+    const sel = document.getElementById('report-week') || document.getElementById('week-selector');
     if (sel) sel.addEventListener('change', () => { renderFigure3(); renderFigure4(); renderProse(); });
+    const pickerW = document.getElementById('report-week');
+    if (pickerW) pickerW.addEventListener('change', () => { renderFigure3(); renderFigure4(); renderProse(); renderReportViewer(getSelectedWeek()); });
+    const prevB = document.getElementById('report-prev');
+    const nextB = document.getElementById('report-next');
+    if (prevB) prevB.addEventListener('click', () => stepWeek(-1));
+    if (nextB) nextB.addEventListener('click', () => stepWeek(1));
     renderFigure3();
     renderFigure4();
     
     renderLedger();
+    renderCostHero();
     initDropdowns();
     renderProse();
     renderReportsBrowser();
-    renderTasks();
     // Populate panel summaries at init so users can see what's inside without opening
     const panelMeta = {
       'panel-telemetry': { label: 'Model/provider effectiveness', dsKey: 'telemetry' },
@@ -775,6 +873,7 @@
       'panel-browser': { label: 'Browsing and YouTube', dsKey: 'browser_stats' },
       'panel-system': { label: 'Cron, upgrades, uptime', dsKey: 'system_stats' },
       'panel-subvalue': { label: 'Plan value vs cost', dsKey: 'subscription_value' },
+      'panel-tokscale': { label: 'Verified $/model (tokscale offline)', dsKey: 'tokscale_stats' },
     };
     Object.entries(panelMeta).forEach(([pid, meta]) => {
       const panel = document.getElementById(pid);

@@ -157,7 +157,7 @@ def _curate_summary_for_week_legacy(w):
     except Exception:
         return {}
 
-def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None) -> str:
+def serialize_payload(canonical, assertions, config, generated_at: datetime, alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None, tokscale_stats: dict | None = None) -> str:
     """Produce window.__WEEKLY__ JSON string with sorted keys and fixed separators.
     alternatives may contain carry_over_exact, curate_legacy etc. for dropdown switching."""
     # canonical is tuple of (weeks, carry_over, project_activity)
@@ -312,6 +312,9 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     # Living Documents tasks (all projects)
     if ld_tasks:
         payload["ld_tasks"] = ld_tasks
+    # Tokscale verified cost/token snapshot (offline local session scan)
+    if tokscale_stats:
+        payload["tokscale_stats"] = tokscale_stats
     try:
         from scripts.canonicalize import compute_dark_work_threshold_adaptive
         payload["dark_work_thresholds"] = {
@@ -323,13 +326,13 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
 
 
-def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None) -> Path:
+def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None, tokscale_stats: dict | None = None) -> Path:
     """Write single index.html with CSS and payload inlined. Include header, canonical table, failure banner."""
     from scripts.emit import serialize_payload as sp
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     weeks, carry_over, project_activity = canonical
-    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks)
+    payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks, tokscale_stats=tokscale_stats)
     # llm supplement payload (small JSON also inlined as separate window global for delineation)
     llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"))
 
@@ -389,12 +392,14 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </div>
 <nav id="topnav">
   <a href="#attention">Attention</a>
+  <a href="#cost">Cost</a>
   <a href="#this-week">This Week</a>
   <a href="#tasks">Tasks</a>
   <a href="#trends">Trends</a>
   <a href="#carry-over">Carry-Over</a>
   <a href="#data-sources">Data Sources</a>
   <a href="#appendix">Appendix</a>
+</nav>
 </header>
 {failure_banner}
 <section id="attention">
@@ -402,37 +407,37 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <p class="section-sub">What needs action right now. Counts derive from the carry-over ledger, week records, and git state — nothing here is hand-entered. Items listed below the tiles are the specific things behind the numbers.</p>
 <div class="attention-grid">
   <div class="attention-card severity-info" id="attention-stalled">
-    <span class="card-icon">⏳</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">!</span>
     <span class="card-label">Stalled items</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from carry_over</span>
   </div>
   <div class="attention-card severity-info" id="attention-darkwork">
-    <span class="card-icon">🌑</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">●</span>
     <span class="card-label">Dark work weeks</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed</span>
   </div>
   <div class="attention-card severity-info" id="attention-coverage">
-    <span class="card-icon">📊</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">%</span>
     <span class="card-label">Data coverage</span>
     <span class="card-value">{with_pair}/{total}</span>
     <span class="card-detail">{with_bundle} bundles</span>
   </div>
   <div class="attention-card severity-info" id="attention-neglected">
-    <span class="card-icon">🕸️</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">~</span>
     <span class="card-label">Neglected projects</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from project_activity</span>
   </div>
   <div class="attention-card severity-info" id="attention-git">
-    <span class="card-icon">🐙</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">±</span>
     <span class="card-label">Git health</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from git_stats</span>
   </div>
   <div class="attention-card severity-info" id="attention-freshness">
-    <span class="card-icon">⚡</span>
+    <span class="card-icon card-icon-text" aria-hidden="true">◷</span>
     <span class="card-label">Data freshness</span>
     <span class="card-value">—</span>
     <span class="card-detail">computed from timestamps</span>
@@ -441,6 +446,45 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </section>
 
 <div class="action-items" id="action-items"></div>
+
+<section id="cost">
+<h2>Cost — verified AI spend</h2>
+<p class="section-sub">Real per-token cost from local session files (<span id="cost-source">tokscale offline scan, built with this page</span>). Not an estimate: every row below carries measured input/output/cache tokens. Subscription plans ($20/$10) are sunk cost — the extracted-value comparison lives under Data Sources → Value Extracted.</p>
+<div class="attention-grid" id="cost-hero">
+  <div class="attention-card severity-info" id="cost-total">
+    <span class="card-icon card-icon-text" aria-hidden="true">$</span>
+    <span class="card-label">Total verified spend</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">all local history</span>
+  </div>
+  <div class="attention-card severity-info" id="cost-top">
+    <span class="card-icon card-icon-text" aria-hidden="true">▲</span>
+    <span class="card-label">Top client</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">—</span>
+  </div>
+  <div class="attention-card severity-info" id="cost-cache">
+    <span class="card-icon card-icon-text" aria-hidden="true">◈</span>
+    <span class="card-label">Cache leverage</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">cache-read share of input</span>
+  </div>
+  <div class="attention-card severity-info" id="cost-msgs">
+    <span class="card-icon card-icon-text" aria-hidden="true">✎</span>
+    <span class="card-label">Messages</span>
+    <span class="card-value">—</span>
+    <span class="card-detail">across all clients</span>
+  </div>
+</div>
+<details class="data-panel" id="panel-tokscale">
+  <summary><span class="panel-title">Spend by client &amp; model</span><span class="panel-summary"></span></summary>
+  <div class="panel-content">
+    <figure class="chart-figure"><figcaption><strong>Verified spend by client</strong> — dollars, measured tokens only. Colour = client.</figcaption><div id="figure-t1" class="chart chart-lazy" style="height:380px;" role="img" aria-label="Bar chart of verified AI spend by client."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Where the tokens go</strong> — input vs output vs cache-read vs cache-write, per top client. Cache reads are the leverage story.</figcaption><div id="figure-t2" class="chart chart-lazy" style="height:380px;" role="img" aria-label="Stacked bar chart of token mix per client."></div></figure>
+    <div id="group-t-table"></div>
+  </div>
+</details>
+</section>
 
 <section id="this-week">
 <h2>This Week</h2>
@@ -456,13 +500,13 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 
 <section id="trends">
 <h2>Trends</h2>
-<p class="section-sub">Throughput over time from the canonical table. Lines connect every week that has data, jumping across gaps without inventing points — a missing week has no dot and shows "—" in the table. Figure 1 uses a log scale because session counts span three orders of magnitude.</p>
-  <div id="figure1" class="chart chart-lazy" style="height:420px;"></div>
-  <div id="figure2" class="chart chart-lazy" style="height:380px;"></div>
+<p class="section-sub">Work volume over time, from the canonical table below. Gaps are weeks with no data — the lines break instead of bridging them. Sessions use a log scale because counts span three orders of magnitude.</p>
+  <figure class="chart-figure"><figcaption><strong>Work volume</strong> — sessions, commits, files touched, active projects per week (log scale).</figcaption><div id="figure1" class="chart chart-lazy" style="height:420px;" role="img" aria-label="Line chart of weekly sessions, commits, files and projects on a log scale."></div></figure>
+  <figure class="chart-figure"><figcaption><strong>Dark work</strong> — sessions per commit. Above the red line, most work never reached git. Higher is less visible, not more productive.</figcaption><div id="figure2" class="chart chart-lazy" style="height:380px;" role="img" aria-label="Line chart of sessions per commit with a dark-work threshold line."></div></figure>
   <div id="figure1-table"></div>
-  <div style="display:flex;gap:16px;">
-    <div id="figure3" class="chart chart-lazy" style="height:360px;flex:1;"></div>
-    <div id="figure4" class="chart chart-lazy" style="height:360px;flex:1;"></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <figure class="chart-figure" style="flex:1;min-width:min(100%,320px);"><figcaption><strong>Daily sessions</strong> — selected week, sessions per day.</figcaption><div id="figure3" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Bar chart of daily sessions for the selected week."></div></figure>
+    <figure class="chart-figure" style="flex:1;min-width:min(100%,320px);"><figcaption><strong>Project activity</strong> — selected week, commits vs uncommitted changes per project.</figcaption><div id="figure4" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Bar chart of commits and uncommitted changes per project."></div></figure>
   </div>
 <section id="tasks">
 <h2>Tasks</h2>
@@ -489,10 +533,10 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <h2>Data Sources</h2>
 <p class="section-sub">What the machine was doing, from primary logs — not from the reports. Each panel is one source. Model Telemetry answers which model/provider combination does the work, at what cost, and how often it fails. Open a panel to see its charts.</p>
 <details class="data-panel" id="panel-telemetry">
-  <summary><span class="panel-title">Model Telemetry</span><span class="panel-summary"></span></summary>
+  <summary><span class="panel-title">Model Telemetry (estimated from cass)</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-m1a" class="chart chart-lazy" style="height:400px;"></div>
-    <div id="figure-m1b" class="chart chart-lazy" style="height:400px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Tool calls by model</strong> — tool calls per model/provider combo, coloured by harness. Estimated from cass.</figcaption><div id="figure-m1a" class="chart chart-lazy" style="height:400px;" role="img" aria-label="Tool calls by model."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Cost vs volume</strong> — estimated cost against tool-call volume; bubble size = conversations. Lower-right is best value.</figcaption><div id="figure-m1b" class="chart chart-lazy" style="height:400px;" role="img" aria-label="Cost vs volume."></div></figure>
     <div id="group-m1-table"></div>
   </div>
 </details>
@@ -500,26 +544,26 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-projects">
   <summary><span class="panel-title">Projects</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-p1" class="chart chart-lazy" style="height:360px;"></div>
-    <div id="figure-p2" class="chart chart-lazy" style="height:360px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Commits by project</strong> — top projects by commit count.</figcaption><div id="figure-p1" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Commits by project."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Project activity detail</strong> — second projects cut.</figcaption><div id="figure-p2" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Project activity detail."></div></figure>
     <div id="group-p-table"></div>
   </div>
 </details>
 
 <details class="data-panel" id="panel-value">
-  <summary><span class="panel-title">Value Extracted — subscriptions &amp; projects</span><span class="panel-summary"></span></summary>
+  <summary><span class="panel-title">Value Extracted — subscriptions &amp; projects (estimated)</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-v1" class="chart chart-lazy" style="height:340px;"></div>
-    <div id="figure-v2" class="chart chart-lazy" style="height:400px;"></div>
-    <div id="figure-v3" class="chart chart-lazy" style="height:300px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Best month vs quota</strong> — extracted market value in the best observed month against plan quota ($20/$10 sunk). Estimated.</figcaption><div id="figure-v1" class="chart chart-lazy" style="height:340px;" role="img" aria-label="Best month vs quota."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Value by project</strong> — top projects by extracted market value. Estimated.</figcaption><div id="figure-v2" class="chart chart-lazy" style="height:400px;" role="img" aria-label="Value by project."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Subscription vs free</strong> — work volume split by subscription-backed vs free/metered. Estimated.</figcaption><div id="figure-v3" class="chart chart-lazy" style="height:300px;" role="img" aria-label="Subscription vs free."></div></figure>
     <div id="group-v-table"></div>
   </div>
 </details>
 <details class="data-panel" id="panel-git">
   <summary><span class="panel-title">Git Health</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-g1" class="chart chart-lazy" style="height:360px;"></div>
-    <div id="figure-g2" class="chart chart-lazy" style="height:320px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Repo states</strong> — clean vs dirty vs behind counts across tracked repos.</figcaption><div id="figure-g1" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Repo states."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Git detail</strong> — second git cut.</figcaption><div id="figure-g2" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Git detail."></div></figure>
     <div id="group-g-table"></div>
   </div>
 </details>
@@ -527,8 +571,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-harness">
   <summary><span class="panel-title">Harness Activity</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-h1" class="chart chart-lazy" style="height:360px;"></div>
-    <div id="figure-h2" class="chart chart-lazy" style="height:360px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Sessions by harness</strong> — sessions per harness.</figcaption><div id="figure-h1" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Sessions by harness."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Harness detail</strong> — second harness cut.</figcaption><div id="figure-h2" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Harness detail."></div></figure>
     <div id="group-h-table"></div>
   </div>
 </details>
@@ -536,8 +580,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-claude">
   <summary><span class="panel-title">Claude Code</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-cc1" class="chart chart-lazy" style="height:320px;"></div>
-    <div id="figure-cc2" class="chart chart-lazy" style="height:320px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Claude activity</strong> — daily Claude Code message volume.</figcaption><div id="figure-cc1" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Claude activity."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Claude detail</strong> — second Claude cut.</figcaption><div id="figure-cc2" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Claude detail."></div></figure>
     <div id="group-cc-table"></div>
   </div>
 </details>
@@ -545,8 +589,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-obsidian">
   <summary><span class="panel-title">Obsidian Vault</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-obs1" class="chart chart-lazy" style="height:320px;"></div>
-    <div id="figure-obs2" class="chart chart-lazy" style="height:320px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Notes by month</strong> — Obsidian notes created per month.</figcaption><div id="figure-obs1" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Notes by month."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Vault detail</strong> — second vault cut.</figcaption><div id="figure-obs2" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Vault detail."></div></figure>
     <div id="group-obs-table"></div>
   </div>
 </details>
@@ -554,8 +598,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-browser">
   <summary><span class="panel-title">Browser</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-br1" class="chart chart-lazy" style="height:320px;"></div>
-    <div id="figure-br2" class="chart chart-lazy" style="height:340px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Top domains</strong> — most-visited domains.</figcaption><div id="figure-br1" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Top domains."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Browsing detail</strong> — second browsing cut.</figcaption><div id="figure-br2" class="chart chart-lazy" style="height:340px;" role="img" aria-label="Browsing detail."></div></figure>
     <div id="group-br-table"></div>
   </div>
 </details>
@@ -563,7 +607,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-system">
   <summary><span class="panel-title">System</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-sys1" class="chart chart-lazy" style="height:320px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Upgrades by month</strong> — system package upgrades per month.</figcaption><div id="figure-sys1" class="chart chart-lazy" style="height:320px;" role="img" aria-label="Upgrades by month."></div></figure>
     <div id="group-sys-table"></div>
   </div>
 </details>
@@ -571,8 +615,8 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <details class="data-panel" id="panel-subvalue">
   <summary><span class="panel-title">Subscription Value</span><span class="panel-summary"></span></summary>
   <div class="panel-content">
-    <div id="figure-sv1" class="chart chart-lazy" style="height:360px;"></div>
-    <div id="figure-sv2" class="chart chart-lazy" style="height:360px;"></div>
+    <figure class="chart-figure"><figcaption><strong>Market value vs plan cost</strong> — estimated market value against subscription cost per month. Estimated.</figcaption><div id="figure-sv1" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Market value vs plan cost."></div></figure>
+    <figure class="chart-figure"><figcaption><strong>Subscription detail</strong> — second subscription cut.</figcaption><div id="figure-sv2" class="chart chart-lazy" style="height:360px;" role="img" aria-label="Subscription detail."></div></figure>
     <div id="group-sv-table"></div>
   </div>
 </details>

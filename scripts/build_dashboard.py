@@ -143,7 +143,13 @@ def main(argv=None):
             primary_problems.append({"path": "ld_tasks", "reason": f"ld_tasks.json unreadable: {e}"})
     else:
         primary_problems.append({"path": "ld_tasks", "reason": "ld_tasks.json missing; run scripts/ld_tasks_audit.py"})
-
+    # Tokscale verified cost/token snapshot (offline local session scan)
+    tokscale_stats = {}
+    try:
+        from scripts.tokscale_stats import build_tokscale_stats
+        tokscale_stats = build_tokscale_stats(primary_problems)
+    except Exception as e:
+        primary_problems.append({"path": "tokscale_stats", "reason": f"tokscale stats failed: {e}"})
 
     # problems to report — primary first, then legacy
     all_problems = primary_problems + report_problems + bundle_problems
@@ -263,7 +269,7 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks)
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks, tokscale_stats=tokscale_stats)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary
