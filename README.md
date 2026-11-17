@@ -11,6 +11,12 @@ Efficiency is unavailable until measured quota consumption and tier evidence
 exist. Pace projections are linear estimates, and the displayed modes are
 informational rather than dispatch decisions.
 
+The final generated `index.html` and `settings.html` are scrubbed for Unix
+home-directory prefixes and the build machine's local username and hostname.
+Relative paths remain intact. This is an identity scrub, not a general privacy
+review: reports and feeds may contain other personal information, so review
+the output before making it public.
+
 **Version:** 0.4.0 — ACR-I loop iteration 2, 6-meta assessed (2026-08-09)
 **Status:** Active, 29 tests green, 34 weeks (26 primary via cass/raw-mirror Feb–Aug, 1610 sessions, 1968 effective), 1.40 MB, idempotent second run True, dev server `http://127.0.0.1:8765/index.html`, audit `11.7/14 READY`
 **Constitution:** `/.specify/memory/constitution.md` — Principles I (canonical table first), II (missing≠0), III (provenance), IV (isolate per-item failure), V (self-validating), VI (legibility), VII (evidence over impression). Offline, stdlib-only, read-only corpus.

@@ -5,6 +5,8 @@ import html
 import json
 import re
 import pathlib
+import getpass
+import socket
 from pathlib import Path
 from datetime import date, datetime
 
@@ -14,9 +16,17 @@ def escape_html(text: str) -> str:
 
 
 def scrub_paths(text: str) -> str:
-    # Replace /home/<user> with ~ ; also handle /home/cheta specifically
-    # Replace any /home/<name> pattern
-    text = re.sub(r"/home/[^/\s]+", "~", text)
+    return re.sub(r"/home/[^/\s\"'<>\\]+", "~", text)
+
+
+def sanitize_output(text: str) -> str:
+    """Scrub local identity from the complete generated document at the boundary."""
+    text = scrub_paths(text)
+    hostname = socket.gethostname()
+    identities = {getpass.getuser(), Path.home().name, hostname, socket.getfqdn()}
+    identities.update(name.split(".")[0] for name in (hostname, socket.getfqdn()))
+    for identity in sorted((x for x in identities if x), key=len, reverse=True):
+        text = re.sub(re.escape(identity), lambda _: "[redacted]", text, flags=re.IGNORECASE)
     return text
 
 
@@ -323,7 +333,7 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
         }
     except Exception:
         pass
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str, ensure_ascii=False)
 
 
 def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None, tokscale_stats: dict | None = None, capacity: dict | None = None) -> Path:
@@ -335,7 +345,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
     weeks, carry_over, project_activity = canonical
     payload_json = serialize_payload(canonical, assertions, config, generated_at, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks, tokscale_stats=tokscale_stats)
     # llm supplement payload (small JSON also inlined as separate window global for delineation)
-    llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"))
+    llm_json = json.dumps(llm_supplement or {}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
     # build HTML inline
     # header with coverage counts
@@ -373,7 +383,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
                     entry[key] = ""
         if entry:
             reports_html[w.week_ending.isoformat()] = entry
-    reports_json = json.dumps(reports_html, sort_keys=True, separators=(",", ":"))
+    reports_json = json.dumps(reports_html, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
     try:
         capacity_html = render_capacity(capacity)
@@ -699,7 +709,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </html>
 """
     out_file = out_path / "index.html"
-    out_file.write_text(html_content, encoding="utf-8")
+    out_file.write_text(sanitize_output(html_content), encoding="utf-8")
     # also write settings.html
     try:
         from scripts.config import load_env
@@ -751,5 +761,5 @@ document.getElementById('save-btn').addEventListener('click', async () => {{
 </script>
 </body></html>
 """
-    (out_path / "settings.html").write_text(settings_html, encoding="utf-8")
+    (out_path / "settings.html").write_text(sanitize_output(settings_html), encoding="utf-8")
     return out_file
