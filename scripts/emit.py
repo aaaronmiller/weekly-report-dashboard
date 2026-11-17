@@ -326,9 +326,10 @@ def serialize_payload(canonical, assertions, config, generated_at: datetime, alt
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
 
 
-def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None, tokscale_stats: dict | None = None) -> Path:
+def render(canonical, assertions, out_dir: str | Path, config: dict, generated_at: datetime, css_text: str, js_text: str, vendor_js: str = "", alternatives: dict | None = None, llm_supplement: dict | None = None, subscription_value: dict | None = None, harness_stats: dict | None = None, projects_stats: dict | None = None, obsidian_stats: dict | None = None, browser_stats: dict | None = None, system_stats: dict | None = None, claude_stats: dict | None = None, git_stats: dict | None = None, telemetry: dict | None = None, ld_tasks: dict | None = None, tokscale_stats: dict | None = None, capacity: dict | None = None) -> Path:
     """Write single index.html with CSS and payload inlined. Include header, canonical table, failure banner."""
     from scripts.emit import serialize_payload as sp
+    from scripts.capacity import render_capacity
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     weeks, carry_over, project_activity = canonical
@@ -374,6 +375,10 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
             reports_html[w.week_ending.isoformat()] = entry
     reports_json = json.dumps(reports_html, sort_keys=True, separators=(",", ":"))
 
+    try:
+        capacity_html = render_capacity(capacity)
+    except (TypeError, ValueError, OverflowError):
+        capacity_html = render_capacity(None)
     html_content = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -393,6 +398,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 <nav id="topnav">
   <a href="#attention">Attention</a>
   <a href="#cost">Cost</a>
+  <a href="#capacity">Capacity</a>
   <a href="#this-week">This Week</a>
   <a href="#tasks">Tasks</a>
   <a href="#trends">Trends</a>
@@ -402,6 +408,7 @@ def render(canonical, assertions, out_dir: str | Path, config: dict, generated_a
 </nav>
 </header>
 {failure_banner}
+{capacity_html}
 <section id="attention">
 <h2>Attention</h2>
 <p class="section-sub">What needs action right now. Counts derive from the carry-over ledger, week records, and git state — nothing here is hand-entered. Items listed below the tiles are the specific things behind the numbers.</p>

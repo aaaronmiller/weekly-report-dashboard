@@ -40,6 +40,7 @@ def main(argv=None):
     parser.add_argument("--dark-work-threshold", type=float, default=8.0, help="sessions per commit")
     parser.add_argument("--stall-age", type=int, default=3, help="carry age marking stalled")
     parser.add_argument("--check", action="store_true", help="validate only; write nothing")
+    parser.add_argument("--capacity-telemetry", default=None, help="optional dsctl telemetry export")
     args = parser.parse_args(argv)
 
     out_dir = Path(args.out) if args.out else Path(args.bundles)
@@ -269,7 +270,9 @@ def main(argv=None):
             llm_supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
         except Exception:
             llm_supplement = {}
-    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks, tokscale_stats=tokscale_stats)
+    from scripts.capacity import load_capacity
+    capacity = load_capacity(args.capacity_telemetry) if args.capacity_telemetry else None
+    out_file = render(canonical, assertions, out_dir, config, generated_at, css_text, js_text, vendor_js, alternatives=alternatives, llm_supplement=llm_supplement, subscription_value=subscription_value, harness_stats=harness_stats, projects_stats=projects_stats, obsidian_stats=obsidian_stats, browser_stats=browser_stats, system_stats=system_stats, claude_stats=claude_stats, git_stats=git_stats, telemetry=telemetry, ld_tasks=ld_tasks, tokscale_stats=tokscale_stats, capacity=capacity)
     size = out_file.stat().st_size
     print(f"Wrote {out_file} ({size} bytes)")
     # log algorithm summary

@@ -1,5 +1,16 @@
 # Weekly Report Dashboard — Project Plan (Overarching)
 
+The Capacity and pace section accepts an optional offline dsctl export through
+`--capacity-telemetry /path/to/export.json`. For example, export to a temporary
+file with `dsctl-telemetry export --out <file>`, then pass that file to
+`scripts/build_dashboard.py`. A missing or unreadable export leaves the section
+visible as unavailable. The section publishes only selected aggregate fields;
+it does not include notes, command arguments, or process identities. Process
+counts and active transcript counts are proxies, not session or agent counts.
+Efficiency is unavailable until measured quota consumption and tier evidence
+exist. Pace projections are linear estimates, and the displayed modes are
+informational rather than dispatch decisions.
+
 **Version:** 0.4.0 — ACR-I loop iteration 2, 6-meta assessed (2026-08-09)
 **Status:** Active, 29 tests green, 34 weeks (26 primary via cass/raw-mirror Feb–Aug, 1610 sessions, 1968 effective), 1.40 MB, idempotent second run True, dev server `http://127.0.0.1:8765/index.html`, audit `11.7/14 READY`
 **Constitution:** `/.specify/memory/constitution.md` — Principles I (canonical table first), II (missing≠0), III (provenance), IV (isolate per-item failure), V (self-validating), VI (legibility), VII (evidence over impression). Offline, stdlib-only, read-only corpus.
